@@ -18,6 +18,8 @@ export default function SettingsTab({ onResetProgram, history }) {
   const [deloadDate, setDeloadDate] = useState(loadDeloadDate)
   const [confirmReset, setConfirmReset] = useState(false)
   const [timerSettings, setTimerSettings] = useState(loadTimerSettings)
+  const [notifStatus, setNotifStatus] = useState('')
+  const [countdown, setCountdown] = useState(0)
 
   const updateTimer = (patch) => {
     setTimerSettings(prev => {
@@ -39,33 +41,74 @@ export default function SettingsTab({ onResetProgram, history }) {
   }
 
   const testNotification = async () => {
-    if (!('Notification' in window)) {
-      alert('Notifications not supported in this browser.')
+    // ── Diagnostics ──────────────────────────────────────────────
+    const supported = 'Notification' in window
+    const swSupported = 'serviceWorker' in navigator
+    const permission = supported ? Notification.permission : 'unsupported'
+
+    if (!supported) {
+      setNotifStatus('❌ Notifications API not supported in this browser.')
       return
     }
-    if (Notification.permission === 'default') {
+
+    // Request permission if not yet decided
+    if (permission === 'default') {
       const result = await Notification.requestPermission()
       if (result !== 'granted') {
-        alert('Permission denied — enable notifications for this site in your browser settings.')
+        setNotifStatus('❌ Permission denied. Open browser site settings and allow notifications.')
         return
       }
     }
+
     if (Notification.permission === 'denied') {
-      alert('Notifications are blocked. Go to your browser/phone settings and allow notifications for this site.')
+      setNotifStatus('❌ Blocked in browser. Go to browser → Site Settings → Notifications → Allow.')
       return
     }
+
+    // ── Fire with 5-second delay so you can lock screen ──────────
+    setNotifStatus('⏳ Notification in 5 seconds — lock your screen now!')
+    setCountdown(5)
+
+    const tick = setInterval(() => {
+      setCountdown(n => {
+        if (n <= 1) clearInterval(tick)
+        return n - 1
+      })
+    }, 1000)
+
+    await new Promise(r => setTimeout(r, 5000))
+
     const payload = {
       body: 'Dumbbell Bench Press — time for set 3',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       silent: false,
       tag: 'rest-timer-test',
+      requireInteraction: false,
     }
-    if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.ready
-      await reg.showNotification('Rest complete 💪', payload)
-    } else {
-      new Notification('Rest complete 💪', payload)
+
+    let method = 'unknown'
+    try {
+      if (swSupported) {
+        const reg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('SW timeout')), 3000)),
+        ])
+        await reg.showNotification('Rest complete 💪', payload)
+        method = 'service-worker'
+      } else {
+        new Notification('Rest complete 💪', payload)
+        method = 'direct'
+      }
+      setNotifStatus(`✅ Sent via ${method}. Did it appear on your lock screen?`)
+    } catch (err) {
+      // SW failed — fall back to direct Notification
+      try {
+        new Notification('Rest complete 💪', payload)
+        setNotifStatus(`⚠️ SW failed (${err.message}), sent via direct Notification instead.`)
+      } catch (err2) {
+        setNotifStatus(`❌ Both methods failed: ${err2.message}`)
+      }
     }
   }
 
@@ -183,11 +226,17 @@ export default function SettingsTab({ onResetProgram, history }) {
           </button>
           <button
             onClick={testNotification}
-            style={{ padding: '8px 16px', borderRadius: 8, background: '#2A2A28', color: '#888780', border: 'none', cursor: 'pointer', fontSize: 13, minHeight: 36 }}
+            disabled={countdown > 0}
+            style={{ padding: '8px 16px', borderRadius: 8, background: countdown > 0 ? '#0F6E56' : '#2A2A28', color: '#fff', border: 'none', cursor: countdown > 0 ? 'default' : 'pointer', fontSize: 13, minHeight: 36, fontWeight: countdown > 0 ? 700 : 400 }}
           >
-            Test notification 🔔
+            {countdown > 0 ? `Lock screen! ${countdown}s` : 'Test notification 🔔'}
           </button>
         </div>
+        {notifStatus && (
+          <p style={{ fontSize: 13, marginTop: 10, lineHeight: 1.5, color: notifStatus.startsWith('✅') ? '#34d399' : notifStatus.startsWith('⏳') ? '#fbbf24' : '#f87171' }}>
+            {notifStatus}
+          </p>
+        )}
 
         {/* Per-category rest times */}
         <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '20px 0 10px' }}>Default rest times</p>
