@@ -83,6 +83,7 @@ export default function SettingsTab({ onResetProgram, history }) {
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       silent: false,
+      vibrate: [200, 100, 200],
       tag: 'rest-timer-test',
       requireInteraction: false,
     }

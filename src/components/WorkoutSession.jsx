@@ -213,9 +213,10 @@ function fireNotification(t) {
     body: `${t.exerciseName} — time for set ${t.setNumber + 1}`,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    silent: true,
-    tag: 'rest-timer',        // replaces any previous rest-timer notification
-    renotify: false,
+    silent: false,
+    vibrate: [200, 100, 200],
+    tag: 'rest-timer',
+    renotify: true,
   }
   // Service-worker path — survives screen lock on Android
   if ('serviceWorker' in navigator) {
