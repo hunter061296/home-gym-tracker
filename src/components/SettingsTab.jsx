@@ -38,6 +38,37 @@ export default function SettingsTab({ onResetProgram, history }) {
     playBeep()
   }
 
+  const testNotification = async () => {
+    if (!('Notification' in window)) {
+      alert('Notifications not supported in this browser.')
+      return
+    }
+    if (Notification.permission === 'default') {
+      const result = await Notification.requestPermission()
+      if (result !== 'granted') {
+        alert('Permission denied — enable notifications for this site in your browser settings.')
+        return
+      }
+    }
+    if (Notification.permission === 'denied') {
+      alert('Notifications are blocked. Go to your browser/phone settings and allow notifications for this site.')
+      return
+    }
+    const payload = {
+      body: 'Dumbbell Bench Press — time for set 3',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      silent: false,
+      tag: 'rest-timer-test',
+    }
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready
+      await reg.showNotification('Rest complete 💪', payload)
+    } else {
+      new Notification('Rest complete 💪', payload)
+    }
+  }
+
   const weeksSinceDeload = deloadDate
     ? Math.floor((Date.now() - new Date(deloadDate).getTime()) / (7 * 86400000))
     : null
@@ -143,12 +174,20 @@ export default function SettingsTab({ onResetProgram, history }) {
           hint={typeof window !== 'undefined' ? (window.Notification?.permission ?? 'unsupported') : ''}
         />
 
-        <button
-          onClick={testBeep}
-          style={{ padding: '8px 16px', borderRadius: 8, background: '#2A2A28', color: '#888780', border: 'none', cursor: 'pointer', fontSize: 13, marginTop: 4, minHeight: 36 }}
-        >
-          Test beep 🔔
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button
+            onClick={testBeep}
+            style={{ padding: '8px 16px', borderRadius: 8, background: '#2A2A28', color: '#888780', border: 'none', cursor: 'pointer', fontSize: 13, minHeight: 36 }}
+          >
+            Test beep 🔔
+          </button>
+          <button
+            onClick={testNotification}
+            style={{ padding: '8px 16px', borderRadius: 8, background: '#2A2A28', color: '#888780', border: 'none', cursor: 'pointer', fontSize: 13, minHeight: 36 }}
+          >
+            Test notification 🔔
+          </button>
+        </div>
 
         {/* Per-category rest times */}
         <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '20px 0 10px' }}>Default rest times</p>
