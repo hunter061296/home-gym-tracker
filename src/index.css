@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background-color: #0F0F0E;
+  color: #F0EEE8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+p, h1, h2, h3 { margin: 0; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Exercise photo toggle animation (2-frame flip like a GIF) */
+@keyframes exImg0 {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes exImg1 {
+  0%, 49% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+
+input[type="text"], input[type="number"] {
+  -webkit-appearance: none;
+}
+
+/* Scrollbar hide on mobile */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
