@@ -42,6 +42,24 @@ p, h1, h2, h3 { margin: 0; }
   50%, 100% { opacity: 1; }
 }
 
+/* Rest timer */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* Card glow pulse when rest ends */
+@keyframes cardPulse {
+  0%, 100% { box-shadow: 0 0 0 2px #0F6E56, 0 0 24px rgba(15,110,86,0.35); }
+  50%       { box-shadow: 0 0 0 4px #0F6E56, 0 0 40px rgba(15,110,86,0.6); }
+}
+
+/* Set circle glow for next set */
+@keyframes setGlow {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(15,110,86,0.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(15,110,86,0); }
+}
+
 input[type="text"], input[type="number"] {
   -webkit-appearance: none;
 }

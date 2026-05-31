@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { loadDeloadDate, saveDeloadDate } from '../services/storage'
+import { loadDeloadDate, saveDeloadDate, loadTimerSettings, saveTimerSettings } from '../services/storage'
+import { playBeep, initAudioContext } from '../services/timerAudio'
 
 const OVERLOAD_LADDER = [
   { n: 1, title: 'Add reps',        body: 'Hit the top of your rep range (e.g. 12 reps) for all sets before moving up.' },
@@ -11,9 +12,31 @@ const OVERLOAD_LADDER = [
   { n: 7, title: 'Increase range',  body: 'Deepening squat depth, fuller stretch on rows. More range = more stimulus.' },
 ]
 
+const CAT_LABELS = { compound: 'Compound', isolation: 'Isolation', rehab: 'Rehab / Band', core: 'Core' }
+
 export default function SettingsTab({ onResetProgram, history }) {
   const [deloadDate, setDeloadDate] = useState(loadDeloadDate)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [timerSettings, setTimerSettings] = useState(loadTimerSettings)
+
+  const updateTimer = (patch) => {
+    setTimerSettings(prev => {
+      const next = { ...prev, ...patch }
+      saveTimerSettings(next)
+      return next
+    })
+  }
+
+  const updateRestTime = (cat, val) => {
+    const parsed = parseInt(val, 10)
+    if (isNaN(parsed) || parsed < 10) return
+    updateTimer({ restTimes: { ...timerSettings.restTimes, [cat]: parsed } })
+  }
+
+  const testBeep = () => {
+    initAudioContext()
+    playBeep()
+  }
 
   const weeksSinceDeload = deloadDate
     ? Math.floor((Date.now() - new Date(deloadDate).getTime()) / (7 * 86400000))
@@ -91,6 +114,63 @@ export default function SettingsTab({ onResetProgram, history }) {
         </div>
       </Section>
 
+      {/* Timer settings */}
+      <Section title="Rest Timer">
+        {/* Auto-start toggle */}
+        <Toggle
+          label="Auto-start after each set"
+          checked={timerSettings.autoStart}
+          onChange={v => updateTimer({ autoStart: v })}
+        />
+        <Toggle
+          label="Vibration on timer end"
+          checked={timerSettings.vibration}
+          onChange={v => updateTimer({ vibration: v })}
+        />
+        <Toggle
+          label="Audio beep on timer end"
+          checked={timerSettings.audioBeep}
+          onChange={v => updateTimer({ audioBeep: v })}
+        />
+        <Toggle
+          label="Browser notifications"
+          checked={typeof window !== 'undefined' && window.Notification?.permission === 'granted'}
+          onChange={() => {
+            if (window.Notification?.permission !== 'granted') {
+              window.Notification?.requestPermission()
+            }
+          }}
+          hint={typeof window !== 'undefined' ? (window.Notification?.permission ?? 'unsupported') : ''}
+        />
+
+        <button
+          onClick={testBeep}
+          style={{ padding: '8px 16px', borderRadius: 8, background: '#2A2A28', color: '#888780', border: 'none', cursor: 'pointer', fontSize: 13, marginTop: 4, minHeight: 36 }}
+        >
+          Test beep 🔔
+        </button>
+
+        {/* Per-category rest times */}
+        <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '20px 0 10px' }}>Default rest times</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {Object.entries(CAT_LABELS).map(([cat, label]) => (
+            <div key={cat} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: '#F0EEE8', fontSize: 14 }}>{label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  min={10} max={300}
+                  value={timerSettings.restTimes[cat]}
+                  onChange={e => updateRestTime(cat, e.target.value)}
+                  style={{ width: 60, padding: '6px 10px', borderRadius: 8, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14, textAlign: 'center', outline: 'none' }}
+                />
+                <span style={{ color: '#888780', fontSize: 13 }}>sec</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
       {/* Reset */}
       <Section title="Program">
         <button
@@ -123,6 +203,32 @@ function Section({ title, children }) {
     <div style={{ marginBottom: 28 }}>
       <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{title}</p>
       {children}
+    </div>
+  )
+}
+
+function Toggle({ label, checked, onChange, hint }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #2A2A28' }}>
+      <div>
+        <span style={{ color: '#F0EEE8', fontSize: 14 }}>{label}</span>
+        {hint && <span style={{ color: '#555452', fontSize: 12, marginLeft: 8 }}>{hint}</span>}
+      </div>
+      <button
+        onClick={() => onChange(!checked)}
+        style={{
+          width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', flexShrink: 0,
+          background: checked ? '#0F6E56' : '#2A2A28',
+          position: 'relative', transition: 'background 200ms',
+        }}
+      >
+        <div style={{
+          width: 20, height: 20, borderRadius: '50%', background: '#fff',
+          position: 'absolute', top: 3,
+          left: checked ? 21 : 3,
+          transition: 'left 200ms',
+        }} />
+      </button>
     </div>
   )
 }

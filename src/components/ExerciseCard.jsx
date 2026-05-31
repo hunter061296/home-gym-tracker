@@ -4,12 +4,13 @@ import { getExerciseImages } from '../data/exerciseImages'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
-export default function ExerciseCard({ exercise, state, onUpdateState, apiData, dayType }) {
+export default function ExerciseCard({ exercise, state, onUpdateState, apiData, dayType, isPulsing, onSetComplete }) {
   const [showHowTo, setShowHowTo] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
   const allDone = state.completedSets.length > 0 && state.completedSets.every(Boolean)
   const doneSets = state.completedSets.filter(Boolean).length
+  const nextSetIdx = state.completedSets.findIndex(d => !d)
 
   const instructions = apiData?.instructions?.length > 0
     ? apiData.instructions
@@ -22,9 +23,11 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
     ACL_FLAG_WORDS.some(w => exercise.name.toLowerCase().includes(w))
 
   const toggleSet = (i) => {
+    const wasUnchecked = !state.completedSets[i]
     const next = [...state.completedSets]
     next[i] = !next[i]
     onUpdateState({ ...state, completedSets: next })
+    if (wasUnchecked && onSetComplete) onSetComplete(i)
   }
 
   // Completed + collapsed → compact row
@@ -47,7 +50,14 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
   }
 
   return (
-    <div style={{ background: '#1C1C1A', border: `1px solid ${allDone ? '#22C55E' : '#2A2A28'}`, borderRadius: 12, marginBottom: 16, overflow: 'hidden', transition: 'border-color 300ms' }}>
+    <div style={{
+      background: '#1C1C1A',
+      border: `1px solid ${allDone ? '#22C55E' : '#2A2A28'}`,
+      borderRadius: 12, marginBottom: 16, overflow: 'hidden',
+      transition: 'border-color 300ms, box-shadow 300ms',
+      boxShadow: isPulsing ? '0 0 0 2px #0F6E56, 0 0 24px rgba(15,110,86,0.35)' : 'none',
+      animation: isPulsing ? 'cardPulse 1.5s ease-in-out 2' : 'none',
+    }}>
       {/* Header */}
       <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
@@ -115,15 +125,20 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
           <span style={{ color: '#888780', fontSize: 12 }}>{doneSets}/{exercise.sets}</span>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {state.completedSets.map((done, i) => (
+          {state.completedSets.map((done, i) => {
+            const isNext = isPulsing && i === nextSetIdx
+            return (
             <button
               key={i}
               onClick={() => toggleSet(i)}
               style={{
-                width: 44, height: 44, borderRadius: '50%', border: `2px solid ${done ? '#22C55E' : '#2A2A28'}`,
-                background: done ? '#22C55E' : '#0F0F0E', color: done ? '#fff' : '#888780',
+                width: 44, height: 44, borderRadius: '50%',
+                border: `2px solid ${done ? '#22C55E' : isNext ? '#0F6E56' : '#2A2A28'}`,
+                background: done ? '#22C55E' : '#0F0F0E', color: done ? '#fff' : isNext ? '#0F6E56' : '#888780',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                fontWeight: 700, fontSize: 15, transition: 'transform 100ms', flexShrink: 0,
+                fontWeight: 700, fontSize: 15, flexShrink: 0,
+                animation: isNext ? 'setGlow 1s ease-in-out infinite' : 'none',
+                transition: 'transform 100ms, border-color 300ms',
               }}
               onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
               onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -132,7 +147,8 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
             >
               {done ? <Check size={16} /> : <span>{i + 1}</span>}
             </button>
-          ))}
+            )
+          })}
         </div>
       </div>
 

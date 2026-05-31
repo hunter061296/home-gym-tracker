@@ -5,11 +5,13 @@ export default function EditExerciseModal({ exercise, onSave, onClose }) {
   const [reps, setReps] = useState(exercise.reps)
   const [tip, setTip] = useState(exercise.tip)
   const [notes, setNotes] = useState(exercise.notes || '')
+  const [restSeconds, setRestSeconds] = useState(exercise.restSeconds ? String(exercise.restSeconds) : '')
 
   const handleSave = () => {
-    const parsed = parseInt(sets, 10)
-    if (isNaN(parsed) || parsed < 1 || parsed > 6) return
-    onSave({ ...exercise, sets: parsed, reps, tip, notes })
+    const parsedSets = parseInt(sets, 10)
+    if (isNaN(parsedSets) || parsedSets < 1 || parsedSets > 6) return
+    const parsedRest = restSeconds ? parseInt(restSeconds, 10) : undefined
+    onSave({ ...exercise, sets: parsedSets, reps, tip, notes, restSeconds: parsedRest || undefined })
     onClose()
   }
 
@@ -64,6 +66,18 @@ export default function EditExerciseModal({ exercise, onSave, onClose }) {
           />
         </Field>
 
+        <Field label="Rest Duration (seconds)" hint="Leave blank to use category default">
+          <input
+            type="number"
+            min={15}
+            max={300}
+            value={restSeconds}
+            onChange={e => setRestSeconds(e.target.value)}
+            placeholder="e.g. 90 (blank = auto)"
+            style={inputStyle}
+          />
+        </Field>
+
         <Field label="Personal Notes">
           <textarea
             value={notes}
@@ -85,10 +99,13 @@ export default function EditExerciseModal({ exercise, onSave, onClose }) {
   )
 }
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', color: '#888780', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+        <label style={{ color: '#888780', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+        {hint && <span style={{ color: '#555452', fontSize: 11 }}>{hint}</span>}
+      </div>
       {children}
     </div>
   )
