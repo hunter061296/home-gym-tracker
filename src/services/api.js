@@ -1,8 +1,6 @@
-const BASE_URL = 'https://exercisedb.p.rapidapi.com'
-const HEADERS = {
-  'X-RapidAPI-Key': '25cdd60019msh7111ba41590050ep1df2a5jsn62fef8488125',
-  'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com',
-}
+const BASE = 'https://workoutxapp.com/v1'
+const KEY = 'wx_419d7e78264b999296d35cf96668bd7494ddf9f97b2998c295e17771'
+const HEADERS = { 'X-WorkoutX-Key': KEY }
 const CACHE_TTL = 24 * 60 * 60 * 1000
 
 function getCache() {
@@ -14,7 +12,7 @@ function setCache(cache) {
 }
 
 async function apiFetch(path) {
-  const res = await fetch(`${BASE_URL}${path}`, { headers: HEADERS })
+  const res = await fetch(`${BASE}${path}`, { headers: HEADERS, redirect: 'follow' })
   if (!res.ok) throw new Error(`API ${res.status}`)
   return res.json()
 }
@@ -30,27 +28,31 @@ function withCache(key, fetcher) {
   })
 }
 
+// Returns first match — used to fetch instructions/target muscle on workout start
 export const searchExercise = (query) =>
   withCache(`name1:${query.toLowerCase()}`, () =>
-    apiFetch(`/exercises/name/${encodeURIComponent(query)}?limit=1`).then(r => r[0] || null)
+    apiFetch(`/exercises/name/${encodeURIComponent(query)}?limit=1`).then(r => (r.data || [])[0] || null)
   )
 
 export const searchExercises = (query) =>
   withCache(`names:${query.toLowerCase()}`, () =>
-    apiFetch(`/exercises/name/${encodeURIComponent(query)}?limit=20`)
+    apiFetch(`/exercises/name/${encodeURIComponent(query)}?limit=20`).then(r => r.data || [])
   )
 
 export const byBodyPart = (part) =>
-  withCache(`bp:${part}`, () =>
-    apiFetch(`/exercises/bodyPart/${part}?limit=30`)
+  withCache(`bp:${part.toLowerCase()}`, () =>
+    apiFetch(`/exercises/bodyPart/${encodeURIComponent(part)}?limit=30`).then(r => r.data || [])
   )
 
 export const byEquipment = (eq) =>
-  withCache(`eq:${eq}`, () =>
-    apiFetch(`/exercises/equipment/${eq}?limit=30`)
+  withCache(`eq:${eq.toLowerCase()}`, () =>
+    apiFetch(`/exercises/equipment/${encodeURIComponent(eq)}?limit=30`).then(r => r.data || [])
   )
 
 export const byMuscle = (muscle) =>
-  withCache(`tm:${muscle}`, () =>
-    apiFetch(`/exercises/target/${muscle}?limit=30`)
+  withCache(`tm:${muscle.toLowerCase()}`, () =>
+    apiFetch(`/exercises/target/${encodeURIComponent(muscle)}?limit=30`).then(r => r.data || [])
   )
+
+export const getExerciseById = (id) =>
+  withCache(`id:${id}`, () => apiFetch(`/exercises/${id}`))

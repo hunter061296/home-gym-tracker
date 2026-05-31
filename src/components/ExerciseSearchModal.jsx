@@ -3,12 +3,12 @@ import { searchExercises, byBodyPart, byEquipment } from '../services/api'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
-const BODY_PARTS = ['chest', 'back', 'shoulders', 'upper arms', 'lower arms', 'upper legs', 'lower legs', 'waist']
-const BODY_PART_LABELS = { 'chest': 'Chest', 'back': 'Back', 'shoulders': 'Shoulders', 'upper arms': 'Arms', 'lower arms': 'Forearms', 'upper legs': 'Quads/Glutes', 'lower legs': 'Calves', 'waist': 'Core' }
-const EQUIPMENT = ['dumbbell', 'band', 'body weight']
-const EQUIP_LABELS = { 'dumbbell': 'Dumbbell', 'band': 'Band', 'body weight': 'Bodyweight' }
-
-const LOWER_BODY_PARTS = ['upper legs', 'lower legs']
+// WorkoutX uses Title Case for bodyPart/equipment
+const BODY_PARTS = ['Chest', 'Back', 'Shoulders', 'Upper Arms', 'Lower Arms', 'Upper Legs', 'Lower Legs', 'Waist']
+const BODY_PART_LABELS = { 'Chest': 'Chest', 'Back': 'Back', 'Shoulders': 'Shoulders', 'Upper Arms': 'Arms', 'Lower Arms': 'Forearms', 'Upper Legs': 'Quads/Glutes', 'Lower Legs': 'Calves', 'Waist': 'Core' }
+const EQUIPMENT = ['Dumbbell', 'Bands', 'Body Weight']
+const EQUIP_LABELS = { 'Dumbbell': 'Dumbbell', 'Bands': 'Band', 'Body Weight': 'Bodyweight' }
+const LOWER_BODY_PARTS = ['Upper Legs', 'Lower Legs']
 
 export default function ExerciseSearchModal({ targetDay, onAdd, onClose }) {
   const [query, setQuery] = useState('')
@@ -179,7 +179,7 @@ export default function ExerciseSearchModal({ targetDay, onAdd, onClose }) {
                         </div>
                       ) : (
                         <img
-                          src={ex.gifUrl}
+                          src={ex.gifUrl ? `${ex.gifUrl}?api-key=wx_419d7e78264b999296d35cf96668bd7494ddf9f97b2998c295e17771` : ''}
                           alt={ex.name}
                           onError={() => setImgErrors(p => ({ ...p, [ex.id]: true }))}
                           style={{ width: '100%', height: '100%', objectFit: 'contain' }}

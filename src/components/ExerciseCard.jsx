@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { EXERCISE_SVGS } from './ExerciseSVGs'
-import { getExerciseImages } from '../data/exerciseImages'
+import { getGifUrl } from '../data/exerciseImages'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
@@ -16,8 +16,8 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
     ? apiData.instructions
     : exercise.instructions || []
 
-  const photos = getExerciseImages(exercise.id)
-  const SVGIcon = (!photos && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
+  const gifUrl = getGifUrl(exercise.id)
+  const SVGIcon = (!gifUrl && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
 
   const isAclUnsafe = dayType === 'lower' &&
     ACL_FLAG_WORDS.some(w => exercise.name.toLowerCase().includes(w))
@@ -91,26 +91,29 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
         </div>
       </div>
 
-      {/* Illustration: real photos (animated) > SVG > YouTube link */}
+      {/* Illustration: WorkoutX GIF > SVG > placeholder */}
       <div style={{ height: 200, background: '#111', overflow: 'hidden', position: 'relative' }}>
-        {photos ? (
-          <AnimatedPhotos img0={photos.img0} img1={photos.img1} name={exercise.name} />
+        {gifUrl ? (
+          <GifImage src={gifUrl} name={exercise.name} />
         ) : SVGIcon ? (
           <div style={{ height: '100%', padding: 8 }}><SVGIcon /></div>
         ) : (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <span style={{ fontSize: 36 }}>🏋️</span>
-            <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' exercise form')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#0F6E56', fontSize: 13, textDecoration: 'underline' }}
-            >
-              Watch on YouTube
-            </a>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 40 }}>🏋️</span>
           </div>
         )}
       </div>
+
+      {/* YouTube search link — always visible */}
+      <a
+        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' exercise form')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', color: '#888780', fontSize: 12, textDecoration: 'none', borderBottom: '1px solid #2A2A28' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#DC2626"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><polygon fill="white" points="9.75,15.02 15.5,12 9.75,8.98"/></svg>
+        Watch on YouTube
+      </a>
 
       {/* Tip */}
       <div style={{ margin: '12px 16px 8px', padding: '10px 12px', borderRadius: 8, background: 'rgba(15,110,86,0.12)', borderLeft: '3px solid #0F6E56' }}>
@@ -192,39 +195,28 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
   )
 }
 
-function AnimatedPhotos({ img0, img1, name }) {
-  const [loaded0, setLoaded0] = useState(false)
-  const [loaded1, setLoaded1] = useState(false)
-  const [err0, setErr0] = useState(false)
-  const both = loaded0 && loaded1
+function GifImage({ src, name }) {
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Skeleton shown until both images loaded */}
-      {!both && !err0 && (
+      {!loaded && !error && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,#1C1C1A 25%,#2A2A28 50%,#1C1C1A 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
       )}
-      {err0 ? (
+      {error ? (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <span style={{ fontSize: 32 }}>🏋️</span>
           <span style={{ color: '#555452', fontSize: 12 }}>{name}</span>
         </div>
       ) : (
-        <>
-          <img
-            src={img0}
-            alt={`${name} position 1`}
-            onLoad={() => setLoaded0(true)}
-            onError={() => setErr0(true)}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: both ? 'exImg0 2s steps(1) infinite' : 'none', opacity: both ? undefined : 0 }}
-          />
-          <img
-            src={img1}
-            alt={`${name} position 2`}
-            onLoad={() => setLoaded1(true)}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: both ? 'exImg1 2s steps(1) infinite' : 'none', opacity: both ? undefined : 0 }}
-          />
-        </>
+        <img
+          src={src}
+          alt={name}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: loaded ? 1 : 0, transition: 'opacity 300ms' }}
+        />
       )}
     </div>
   )
