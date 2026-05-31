@@ -22,10 +22,31 @@ export function saveTimerSettings(s) {
   localStorage.setItem('timer_settings', JSON.stringify(s))
 }
 
+// Fields we always sync from DEFAULT_PROGRAM for default exercises,
+// so they stay current even if the user has an older saved program.
+const SYNC_FIELDS = ['instructions', 'target', 'secondaryMuscles', 'yImages', 'svgKey']
+
 export function loadProgram() {
   try {
     const s = localStorage.getItem('workout_program')
-    if (s) return JSON.parse(s)
+    if (s) {
+      const saved = JSON.parse(s)
+      const defaultById = {}
+      for (const ex of [...DEFAULT_PROGRAM.upper, ...DEFAULT_PROGRAM.lower]) {
+        defaultById[ex.id] = ex
+      }
+      const merge = exercises => exercises.map(ex => {
+        const def = defaultById[ex.id]
+        if (!def) return ex // custom exercise — leave untouched
+        const synced = { ...ex }
+        for (const field of SYNC_FIELDS) {
+          if (def[field] !== undefined) synced[field] = def[field]
+          else delete synced[field]
+        }
+        return synced
+      })
+      return { ...saved, upper: merge(saved.upper || []), lower: merge(saved.lower || []) }
+    }
   } catch {}
   return JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
 }

@@ -16,6 +16,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u1', name: 'Dumbbell Bench Press', search: 'dumbbell bench press',
       sets: 4, reps: '8–12', tip: '3-sec lowering when 12 reps feels easy', notes: '',
       svgKey: 'benchPress',
+      yImages: ['Dumbbell_Bench_Press/0.jpg', 'Dumbbell_Bench_Press/1.jpg'],
       target: 'chest', secondaryMuscles: ['triceps', 'shoulders'],
       instructions: [
         'Lie flat on a bench holding a dumbbell in each hand at chest level, palms facing forward.',
@@ -29,6 +30,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u2', name: 'Dumbbell Floor Press', search: 'dumbbell floor press',
       sets: 3, reps: '12–15', tip: 'Swap with bench press every few weeks', notes: '',
       svgKey: 'floorPress',
+      yImages: ['Dumbbell_Floor_Press/0.jpg', 'Dumbbell_Floor_Press/1.jpg'],
       target: 'chest', secondaryMuscles: ['triceps'],
       instructions: [
         'Lie on the floor with knees bent, feet flat. Hold a dumbbell in each hand at chest level.',
@@ -42,6 +44,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u3', name: 'Single-Arm Dumbbell Row', search: 'dumbbell one arm row',
       sets: 4, reps: '10–15', tip: 'Pause 2 sec at the top of each rep', notes: '',
       svgKey: 'singleArmRow',
+      yImages: ['One-Arm_Dumbbell_Row/0.jpg', 'One-Arm_Dumbbell_Row/1.jpg'],
       target: 'lats', secondaryMuscles: ['middle back', 'biceps'],
       instructions: [
         'Place one knee and the same-side hand on a bench for support. Back should be flat and parallel to the floor.',
@@ -55,6 +58,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u4', name: 'Band Pull-Apart', search: 'band pull apart',
       sets: 3, reps: '20', tip: 'Pull to a full T — rear delts and traps', notes: '',
       svgKey: 'bandPullApart',
+      yImages: ['Band_Pull_Apart/0.jpg', 'Band_Pull_Apart/1.jpg'],
       target: 'shoulders', secondaryMuscles: ['traps'],
       instructions: [
         'Stand and hold the band with both hands shoulder-width apart, arms extended in front.',
@@ -68,6 +72,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u5', name: 'Seated Shoulder Press', search: 'dumbbell seated shoulder press',
       sets: 3, reps: '10–15', tip: 'Lower to ear level — full range every rep', notes: '',
       svgKey: 'shoulderPress',
+      yImages: ['Dumbbell_Shoulder_Press/0.jpg', 'Dumbbell_Shoulder_Press/1.jpg'],
       target: 'shoulders', secondaryMuscles: ['triceps', 'traps'],
       instructions: [
         'Sit upright on the bench with a dumbbell in each hand at shoulder height, palms forward.',
@@ -81,6 +86,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u6', name: 'Lateral Raises', search: 'dumbbell lateral raise',
       sets: 4, reps: '15–20', tip: '1-sec pause at top, 3-sec lowering', notes: '',
       svgKey: 'lateralRaises',
+      yImages: ['Lateral_Raise_-_With_Bands/0.jpg', 'Lateral_Raise_-_With_Bands/1.jpg'],
       target: 'shoulders', secondaryMuscles: [],
       instructions: [
         'Stand holding a dumbbell in each hand at your sides, palms facing in.',
@@ -94,6 +100,7 @@ export const DEFAULT_PROGRAM = {
       id: 'u7', name: 'Alternating Bicep Curl', search: 'dumbbell alternate bicep curl',
       sets: 3, reps: '10–15', tip: 'Twist palm up at the top every rep', notes: '',
       svgKey: 'bicepCurl',
+      yImages: ['Dumbbell_Alternate_Bicep_Curl/0.jpg', 'Dumbbell_Alternate_Bicep_Curl/1.jpg'],
       target: 'biceps', secondaryMuscles: ['forearms'],
       instructions: [
         'Stand holding a dumbbell in each hand at your sides, palms facing in (neutral grip).',
@@ -122,6 +129,7 @@ export const DEFAULT_PROGRAM = {
       id: 'l1', name: 'Hip Thrust', search: 'hip thrust',
       sets: 4, reps: '15–20', tip: '2-sec hold at top, squeeze glutes hard', notes: '',
       svgKey: 'hipThrust',
+      yImages: ['Barbell_Hip_Thrust/0.jpg', 'Barbell_Hip_Thrust/1.jpg'],
       target: 'glutes', secondaryMuscles: ['hamstrings'],
       instructions: [
         'Sit on the floor with your upper back against a bench. Loop the resistance band across your hips.',
@@ -135,6 +143,7 @@ export const DEFAULT_PROGRAM = {
       id: 'l2', name: 'Glute Bridge', search: 'glute bridge',
       sets: 3, reps: '20–25', tip: 'Feet flat, drive through heels', notes: '',
       svgKey: 'gluteBridge',
+      yImages: ['Barbell_Glute_Bridge/0.jpg', 'Barbell_Glute_Bridge/1.jpg'],
       target: 'glutes', secondaryMuscles: ['hamstrings'],
       instructions: [
         'Lie on your back with knees bent, feet flat on the floor hip-width apart.',
@@ -148,6 +157,7 @@ export const DEFAULT_PROGRAM = {
       id: 'l3', name: 'Low Box Step Up', search: 'step up',
       sets: 3, reps: '12', tip: '20–25cm box max — no deep knee bend', notes: '',
       svgKey: 'lowBoxStepUp',
+      yImages: ['Dumbbell_Step_Ups/0.jpg', 'Dumbbell_Step_Ups/1.jpg'],
       target: 'glutes', secondaryMuscles: ['quadriceps', 'hamstrings'],
       instructions: [
         'Stand in front of a low box or step (20–25cm). Hold a dumbbell in each hand at your sides.',
@@ -189,6 +199,7 @@ export const DEFAULT_PROGRAM = {
       id: 'l6', name: 'Standing Calf Raise', search: 'calf raise',
       sets: 4, reps: '20–25', tip: 'Use a step for extra range of motion', notes: '',
       svgKey: 'calfRaise',
+      yImages: ['Calf_Raises_-_With_Bands/0.jpg', 'Calf_Raises_-_With_Bands/1.jpg'],
       target: 'calves', secondaryMuscles: [],
       instructions: [
         'Stand on the edge of a step with heels hanging off. Hold dumbbells for added resistance.',
@@ -202,6 +213,7 @@ export const DEFAULT_PROGRAM = {
       id: 'l7', name: 'Dead Bug', search: 'dead bug',
       sets: 3, reps: '10 each side', tip: 'Core stability protects the knee', notes: '',
       svgKey: 'coreFinisher',
+      yImages: ['Dead_Bug/0.jpg', 'Dead_Bug/1.jpg'],
       target: 'abdominals', secondaryMuscles: [],
       instructions: [
         'Lie on your back with arms pointing straight up toward the ceiling.',
