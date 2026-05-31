@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import EditExerciseModal from './EditExerciseModal'
 import ExerciseSearchModal from './ExerciseSearchModal'
+import ExerciseModal from './ExerciseModal'
 
 export default function ExerciseEditor({ program, onUpdateProgram, onAddToast }) {
   const [day, setDay] = useState('upper')
   const [editTarget, setEditTarget] = useState(null)
+  const [previewTarget, setPreviewTarget] = useState(null)
   const [showSearch, setShowSearch] = useState(false)
   const [deletedUndo, setDeletedUndo] = useState(null)
 
@@ -100,14 +102,21 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast })
               </button>
             </div>
 
-            {/* Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Info — tap to preview */}
+            <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setPreviewTarget(ex)}>
               <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</p>
               <p style={{ color: '#888780', fontSize: 12, margin: 0 }}>{ex.sets} sets × {ex.reps}</p>
             </div>
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={() => setPreviewTarget(ex)}
+                style={{ width: 36, height: 36, borderRadius: 8, background: '#2A2A28', border: 'none', color: '#888780', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Preview"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
               <button
                 onClick={() => setEditTarget(ex)}
                 style={{ width: 36, height: 36, borderRadius: 8, background: '#2A2A28', border: 'none', color: '#888780', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -147,6 +156,14 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast })
           <span style={{ color: '#888780', fontSize: 13 }}>Exercise removed</span>
           <button onClick={undoDelete} style={{ color: '#0F6E56', fontSize: 13, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Undo</button>
         </div>
+      )}
+
+      {/* Preview modal */}
+      {previewTarget && (
+        <ExerciseModal
+          exercise={previewTarget}
+          onClose={() => setPreviewTarget(null)}
+        />
       )}
 
       {/* Edit modal */}
