@@ -209,10 +209,20 @@ export default function WorkoutSession({ session, program, apiData, onUpdate, on
 
 function fireNotification(t) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
-  try {
-    new Notification('Rest complete 💪', {
-      body: `${t.exerciseName} — time for set ${t.setNumber + 1}`,
-      silent: true,
-    })
-  } catch (_) {}
+  const payload = {
+    body: `${t.exerciseName} — time for set ${t.setNumber + 1}`,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    silent: true,
+    tag: 'rest-timer',        // replaces any previous rest-timer notification
+    renotify: false,
+  }
+  // Service-worker path — survives screen lock on Android
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready
+      .then(reg => reg.showNotification('Rest complete 💪', payload))
+      .catch(() => new Notification('Rest complete 💪', payload))
+  } else {
+    try { new Notification('Rest complete 💪', payload) } catch (_) {}
+  }
 }
