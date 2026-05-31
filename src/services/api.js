@@ -1,4 +1,4 @@
-const BASE = 'https://workoutxapp.com/v1'
+const BASE = 'https://api.workoutxapp.com/v1'
 const KEY = 'wx_419d7e78264b999296d35cf96668bd7494ddf9f97b2998c295e17771'
 const HEADERS = { 'X-WorkoutX-Key': KEY }
 const CACHE_TTL = 24 * 60 * 60 * 1000
@@ -12,7 +12,7 @@ function setCache(cache) {
 }
 
 async function apiFetch(path) {
-  const res = await fetch(`${BASE}${path}`, { headers: HEADERS, redirect: 'follow' })
+  const res = await fetch(`${BASE}${path}`, { headers: HEADERS })
   if (!res.ok) throw new Error(`API ${res.status}`)
   return res.json()
 }

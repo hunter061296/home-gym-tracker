@@ -113,7 +113,7 @@ export const DEFAULT_PROGRAM = {
       svgKey: 'coreFinisher',
     },
     {
-      id: 'l8', name: 'Side-Lying Hip Abduction', search: 'hip abduction',
+      id: 'l8', name: 'Seated Hip Abduction', search: 'hip abduction',
       sets: 3, reps: '20', tip: 'Strengthens hip abductors — supports knee', notes: '',
       svgKey: 'hipAbduction',
       instructions: [
