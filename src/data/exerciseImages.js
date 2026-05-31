@@ -19,7 +19,8 @@ const LOCAL_GIFS = {
   l6: '0417', // Dumbbell Standing Calf Raise
   l7: '0276', // Dead Bug
   l8: '3006', // Resistance Band Seated Hip Abduction
-  // u2, u4, l4 have no match — fall back to SVG illustrations
+  l4: '3007', // Resistance Band Leg Extension (closest to Terminal Knee Extension)
+  // u2 (Floor Press) and u4 (Band Pull-Apart) not in WorkoutX — SVG fallback
 }
 
 export function getGifUrl(exercise) {
