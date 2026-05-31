@@ -30,6 +30,27 @@ export default function WorkoutSession({ session, program, apiData, onUpdate, on
     }
   }, [])
 
+  // Intercept Android hardware back button — show exit dialog instead of quitting
+  useEffect(() => {
+    history.pushState({ workoutActive: true }, '')
+
+    const handlePop = () => {
+      setConfirmExit(prev => {
+        if (prev) {
+          // Dialog already open — back button closes it; re-push so next back still works
+          history.pushState({ workoutActive: true }, '')
+          return false
+        }
+        // Open dialog and push so another back press can dismiss it
+        history.pushState({ workoutActive: true }, '')
+        return true
+      })
+    }
+
+    window.addEventListener('popstate', handlePop)
+    return () => window.removeEventListener('popstate', handlePop)
+  }, [])
+
   // Stable countdown interval — runs for the lifetime of this component
   useEffect(() => {
     const id = setInterval(() => {
