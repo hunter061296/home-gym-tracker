@@ -5,7 +5,7 @@ import { loadTimerSettings } from '../services/storage'
 import { getDefaultRestTime } from '../data/timerCategories'
 import { initAudioContext, playBeep } from '../services/timerAudio'
 
-export default function WorkoutSession({ session, program, apiData, onUpdate, onComplete, onExit }) {
+export default function WorkoutSession({ session, program, onUpdate, onComplete, onExit }) {
   const [confirmExit, setConfirmExit] = useState(false)
   const [timerState, setTimerState] = useState(null)
   const [, setRenderTick] = useState(0)
@@ -179,7 +179,6 @@ export default function WorkoutSession({ session, program, apiData, onUpdate, on
             exercise={exercise}
             state={session.exerciseStates[i]}
             onUpdateState={s => updateState(exercise.id, s)}
-            apiData={apiData[exercise.id]}
             dayType={session.type}
             isPulsing={pulseExId === exercise.id}
             onSetComplete={(setIdx) => handleSetComplete(i, setIdx)}

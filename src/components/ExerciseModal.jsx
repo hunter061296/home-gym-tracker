@@ -1,29 +1,21 @@
 import { useState, useEffect } from 'react'
 import { EXERCISE_SVGS } from './ExerciseSVGs'
-import { getGifUrl } from '../data/exerciseImages'
-import { searchExercise } from '../services/api'
+import { getGifUrl, getYuhonaImages } from '../data/exerciseImages'
 
 export default function ExerciseModal({ exercise, onClose }) {
-  const [apiData, setApiData] = useState(null)
   const [showHowTo, setShowHowTo] = useState(true)
 
-  // Lock scroll while open
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  // Fetch instructions + muscle info (same as WorkoutSession does)
-  useEffect(() => {
-    searchExercise(exercise.search || exercise.name).then(setApiData).catch(() => {})
-  }, [exercise.search, exercise.name])
-
-  const instructions = apiData?.instructions?.length > 0
-    ? apiData.instructions
-    : exercise.instructions || []
-
+  const instructions = exercise.instructions || []
   const gifUrl = getGifUrl(exercise)
-  const SVGIcon = (!gifUrl && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
+  const yuhonaImgs = !gifUrl ? getYuhonaImages(exercise) : null
+  const SVGIcon = (!gifUrl && !yuhonaImgs && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
+  const target = exercise.target || ''
+  const secondary = exercise.secondaryMuscles || []
 
   return (
     <div
@@ -44,9 +36,9 @@ export default function ExerciseModal({ exercise, onClose }) {
           <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
             <h2 style={{ color: '#F0EEE8', fontSize: 18, fontWeight: 700, margin: '0 0 4px' }}>{exercise.name}</h2>
             <p style={{ color: '#0F6E56', fontSize: 14, fontWeight: 600, margin: 0 }}>{exercise.sets} sets × {exercise.reps}</p>
-            {apiData?.target && (
+            {target && (
               <p style={{ color: '#888780', fontSize: 12, margin: '2px 0 0', textTransform: 'capitalize' }}>
-                {apiData.target}{apiData.secondaryMuscles?.length > 0 ? ` · ${apiData.secondaryMuscles.slice(0, 2).join(', ')}` : ''}
+                {target}{secondary.length > 0 ? ` · ${secondary.slice(0, 2).join(', ')}` : ''}
               </p>
             )}
           </div>
@@ -58,10 +50,12 @@ export default function ExerciseModal({ exercise, onClose }) {
           </button>
         </div>
 
-        {/* GIF / SVG */}
+        {/* GIF / animated JPGs / SVG */}
         <div style={{ height: 220, background: '#111', overflow: 'hidden', position: 'relative' }}>
           {gifUrl ? (
             <GifImage src={gifUrl} name={exercise.name} />
+          ) : yuhonaImgs ? (
+            <AnimatedJpg urls={yuhonaImgs} name={exercise.name} />
           ) : SVGIcon ? (
             <div style={{ height: '100%', padding: 8 }}><SVGIcon /></div>
           ) : (
@@ -116,6 +110,15 @@ export default function ExerciseModal({ exercise, onClose }) {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function AnimatedJpg({ urls, name }) {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img src={urls[0]} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: 'exImg0 1.6s steps(1) infinite' }} />
+      {urls[1] && <img src={urls[1]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: 'exImg1 1.6s steps(1) infinite' }} />}
     </div>
   )
 }

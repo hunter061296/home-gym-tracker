@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { EXERCISE_SVGS } from './ExerciseSVGs'
-import { getGifUrl } from '../data/exerciseImages'
+import { getGifUrl, getYuhonaImages } from '../data/exerciseImages'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
-export default function ExerciseCard({ exercise, state, onUpdateState, apiData, dayType, isPulsing, onSetComplete }) {
+export default function ExerciseCard({ exercise, state, onUpdateState, dayType, isPulsing, onSetComplete }) {
   const [showHowTo, setShowHowTo] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -12,12 +12,13 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
   const doneSets = state.completedSets.filter(Boolean).length
   const nextSetIdx = state.completedSets.findIndex(d => !d)
 
-  const instructions = apiData?.instructions?.length > 0
-    ? apiData.instructions
-    : exercise.instructions || []
-
+  const instructions = exercise.instructions || []
   const gifUrl = getGifUrl(exercise)
-  const SVGIcon = (!gifUrl && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
+  const yuhonaImgs = !gifUrl ? getYuhonaImages(exercise) : null
+  const SVGIcon = (!gifUrl && !yuhonaImgs && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
+
+  const target = exercise.target || ''
+  const secondary = exercise.secondaryMuscles || []
 
   const isAclUnsafe = dayType === 'lower' &&
     ACL_FLAG_WORDS.some(w => exercise.name.toLowerCase().includes(w))
@@ -71,9 +72,9 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
             )}
           </div>
           <p style={{ color: '#0F6E56', fontSize: 14, fontWeight: 600, margin: 0 }}>{exercise.sets} sets × {exercise.reps}</p>
-          {apiData?.target && (
+          {target && (
             <p style={{ color: '#888780', fontSize: 12, margin: '2px 0 0', textTransform: 'capitalize' }}>
-              {apiData.target}{apiData.secondaryMuscles?.length > 0 ? ` · ${apiData.secondaryMuscles.slice(0, 2).join(', ')}` : ''}
+              {target}{secondary.length > 0 ? ` · ${secondary.slice(0, 2).join(', ')}` : ''}
             </p>
           )}
         </div>
@@ -91,10 +92,12 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
         </div>
       </div>
 
-      {/* Illustration: WorkoutX GIF > SVG > placeholder */}
+      {/* Illustration: local GIF > yuhonas animated JPGs > SVG > placeholder */}
       <div style={{ height: 200, background: '#111', overflow: 'hidden', position: 'relative' }}>
         {gifUrl ? (
           <GifImage src={gifUrl} name={exercise.name} />
+        ) : yuhonaImgs ? (
+          <AnimatedJpg urls={yuhonaImgs} name={exercise.name} />
         ) : SVGIcon ? (
           <div style={{ height: '100%', padding: 8 }}><SVGIcon /></div>
         ) : (
@@ -191,6 +194,15 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function AnimatedJpg({ urls, name }) {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img src={urls[0]} alt={name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: 'exImg0 1.6s steps(1) infinite' }} />
+      {urls[1] && <img src={urls[1]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', animation: 'exImg1 1.6s steps(1) infinite' }} />}
     </div>
   )
 }

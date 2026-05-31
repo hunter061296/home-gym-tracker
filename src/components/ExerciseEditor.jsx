@@ -43,16 +43,18 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast })
     onUpdateProgram({ ...program, [day]: next })
   }
 
-  const addFromSearch = (apiEx) => {
+  const addFromSearch = (libEx) => {
     const newEx = {
       id: `custom-${Date.now()}`,
-      name: cap(apiEx.name),
-      search: apiEx.name,
+      name: cap(libEx.name),
       sets: 3,
       reps: '10–12',
-      tip: `Target: ${apiEx.target}`,
+      tip: `Target: ${(libEx.primaryMuscles || []).join(', ')}`,
       notes: '',
-      wxId: apiEx.id,  // WorkoutX ID — used to auto-resolve the GIF
+      target: (libEx.primaryMuscles || [])[0] || '',
+      secondaryMuscles: libEx.secondaryMuscles || [],
+      instructions: libEx.instructions || [],
+      yImages: libEx.images || [],
     }
     onUpdateProgram({ ...program, [day]: [...program[day], newEx] })
     setShowSearch(false)

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault } from './services/storage'
-import { searchExercise } from './services/api'
 import { SCHEDULE } from './data/defaultProgram'
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
@@ -14,11 +13,12 @@ export default function App() {
   const [tab, setTab] = useState('home')
   const [view, setView] = useState('tabs') // 'tabs' | 'workout' | 'complete'
   const [session, setSession] = useState(null)
-  const [apiData, setApiData] = useState({})
   const [completedSession, setCompletedSession] = useState(null)
   const [history, setHistory] = useState(loadHistory)
   const [program, setProgram] = useState(loadProgram)
   const [toasts, setToasts] = useState([])
+  // apiData kept as empty — all exercise data now lives on the exercise object itself
+  const apiData = {}
 
   const pushToast = (msg, type = 'info') => {
     const id = Date.now()
@@ -45,18 +45,7 @@ export default function App() {
       })),
     }
     setSession(newSession)
-    setApiData({})
     setView('workout')
-
-    // Fetch GIFs progressively
-    exercises.forEach(async (ex) => {
-      try {
-        const data = await searchExercise(ex.search)
-        setApiData(prev => ({ ...prev, [ex.id]: data || null }))
-      } catch {
-        setApiData(prev => ({ ...prev, [ex.id]: null }))
-      }
-    })
   }
 
   const finishWorkout = (sess) => {
@@ -76,13 +65,11 @@ export default function App() {
   const exitWorkout = () => {
     setView('tabs')
     setSession(null)
-    setApiData({})
   }
 
   const doneComplete = () => {
     setView('tabs')
     setSession(null)
-    setApiData({})
     setCompletedSession(null)
     setTab('home')
   }
@@ -95,7 +82,6 @@ export default function App() {
         <WorkoutSession
           session={session}
           program={program}
-          apiData={apiData}
           onUpdate={setSession}
           onComplete={finishWorkout}
           onExit={exitWorkout}
