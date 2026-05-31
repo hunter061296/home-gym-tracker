@@ -16,7 +16,7 @@ export default function ExerciseCard({ exercise, state, onUpdateState, apiData, 
     ? apiData.instructions
     : exercise.instructions || []
 
-  const gifUrl = getGifUrl(exercise.id)
+  const gifUrl = getGifUrl(exercise)
   const SVGIcon = (!gifUrl && exercise.svgKey) ? EXERCISE_SVGS[exercise.svgKey] : null
 
   const isAclUnsafe = dayType === 'lower' &&

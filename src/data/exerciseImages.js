@@ -25,8 +25,13 @@ const WORKOUTX_IDS = {
   l8: '3006', // Resistance Band Seated Hip Abduction
 }
 
-export function getGifUrl(exerciseId) {
-  const wxId = WORKOUTX_IDS[exerciseId]
-  if (!wxId) return null
-  return `${GIF_BASE}/${wxId}.gif?api-key=${API_KEY}`
+export function getGifUrl(exercise) {
+  // Default exercises: hardcoded map keyed by our program ID (e.g. "u1", "l3")
+  const mappedId = WORKOUTX_IDS[exercise.id]
+  if (mappedId) return `${GIF_BASE}/${mappedId}.gif?api-key=${API_KEY}`
+
+  // Custom exercises added via search: wxId stored directly on the object
+  if (exercise.wxId) return `${GIF_BASE}/${exercise.wxId}.gif?api-key=${API_KEY}`
+
+  return null
 }

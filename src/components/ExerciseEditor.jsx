@@ -50,7 +50,7 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast })
       reps: '10–12',
       tip: `Target: ${apiEx.target}`,
       notes: '',
-      apiId: apiEx.id,
+      wxId: apiEx.id,  // WorkoutX ID — used to auto-resolve the GIF
     }
     onUpdateProgram({ ...program, [day]: [...program[day], newEx] })
     setShowSearch(false)
