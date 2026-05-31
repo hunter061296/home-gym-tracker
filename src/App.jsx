@@ -30,7 +30,7 @@ export default function App() {
   useEffect(() => {
     if (view !== 'tabs') return
     // Push one state so the first back press fires popstate instead of closing
-    history.pushState({ gymExit: true }, '')
+    window.history.pushState({ gymExit: true }, '')
 
     const handlePop = () => {
       if (!backWarnedRef.current) {
@@ -40,7 +40,7 @@ export default function App() {
         // Re-arm after 2s if user doesn't press again
         backTimerRef.current = setTimeout(() => {
           backWarnedRef.current = false
-          history.pushState({ gymExit: true }, '')
+          window.history.pushState({ gymExit: true }, '')
         }, 2000)
       }
       // Second press within 2s: warned is true, we do nothing → browser closes PWA
