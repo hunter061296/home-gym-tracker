@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault } from './services/storage'
 import { SCHEDULE } from './data/defaultProgram'
 import HomeScreen from './components/HomeScreen'
@@ -17,14 +17,42 @@ export default function App() {
   const [history, setHistory] = useState(loadHistory)
   const [program, setProgram] = useState(loadProgram)
   const [toasts, setToasts] = useState([])
-  // apiData kept as empty — all exercise data now lives on the exercise object itself
-  const apiData = {}
 
   const pushToast = (msg, type = 'info') => {
     const id = Date.now()
     setToasts(ts => [...ts, { id, msg, type }])
     setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 3000)
   }
+
+  // Double-tap back to exit (tabs view only — workout handles its own back button)
+  const backWarnedRef = useRef(false)
+  const backTimerRef = useRef(null)
+  useEffect(() => {
+    if (view !== 'tabs') return
+    // Push one state so the first back press fires popstate instead of closing
+    history.pushState({ gymExit: true }, '')
+
+    const handlePop = () => {
+      if (!backWarnedRef.current) {
+        // First press — show toast, mark warned; do NOT push again so second press closes
+        backWarnedRef.current = true
+        pushToast('Press back again to exit')
+        // Re-arm after 2s if user doesn't press again
+        backTimerRef.current = setTimeout(() => {
+          backWarnedRef.current = false
+          history.pushState({ gymExit: true }, '')
+        }, 2000)
+      }
+      // Second press within 2s: warned is true, we do nothing → browser closes PWA
+    }
+
+    window.addEventListener('popstate', handlePop)
+    return () => {
+      window.removeEventListener('popstate', handlePop)
+      clearTimeout(backTimerRef.current)
+      backWarnedRef.current = false
+    }
+  }, [view])
 
   const updateProgram = (p) => {
     setProgram(p)
