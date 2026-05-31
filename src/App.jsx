@@ -95,6 +95,30 @@ export default function App() {
     setSession(null)
   }
 
+  const logWorkout = (type) => {
+    const exercises = program[type]
+    const now = Date.now()
+    const record = {
+      id: now,
+      type,
+      date: new Date().toLocaleDateString('en-CA'),
+      startTime: now - 60 * 60 * 1000,
+      completedAt: now,
+      duration: 60,
+      loggedManually: true,
+      exerciseStates: exercises.map(e => ({
+        id: e.id,
+        name: e.name,
+        completedSets: Array(e.sets).fill(true),
+        weight: '',
+      })),
+    }
+    const next = [record, ...history]
+    setHistory(next)
+    saveHistory(next)
+    pushToast(`${type === 'upper' ? 'Upper' : 'Lower'} Day logged ✓`)
+  }
+
   const doneComplete = () => {
     setView('tabs')
     setSession(null)
@@ -129,7 +153,7 @@ export default function App() {
       <ToastContainer toasts={toasts} />
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
-        {tab === 'home' && <HomeScreen onStartWorkout={startWorkout} history={history} program={program} />}
+        {tab === 'home' && <HomeScreen onStartWorkout={startWorkout} onLogWorkout={logWorkout} history={history} program={program} />}
         {tab === 'history' && <HistoryTab history={history} onClear={() => { saveHistory([]); setHistory([]) }} />}
         {tab === 'program' && <ExerciseEditor program={program} onUpdateProgram={updateProgram} onAddToast={pushToast} />}
         {tab === 'settings' && <SettingsTab onResetProgram={() => { updateProgram(resetToDefault()); pushToast('Program reset to defaults') }} history={history} />}

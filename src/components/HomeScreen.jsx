@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { SCHEDULE, DAY_NAMES } from '../data/defaultProgram'
 
 function greeting() {
@@ -21,7 +22,8 @@ const TYPE_CONFIG = {
   rest:  { label: 'Rest Day',  color: '#888780', bg: 'rgba(136,135,128,0.08)', border: 'rgba(136,135,128,0.2)', text: '#888780' },
 }
 
-export default function HomeScreen({ onStartWorkout, history, program }) {
+export default function HomeScreen({ onStartWorkout, onLogWorkout, history, program }) {
+  const [confirmLog, setConfirmLog] = useState(null) // 'upper' | 'lower' | null
   const now = new Date()
   const dow = now.getDay()
   const type = SCHEDULE[dow]
@@ -31,6 +33,11 @@ export default function HomeScreen({ onStartWorkout, history, program }) {
   const streak = calcStreak(history)
   const lastW = history[0]
   const restTip = REST_TIPS[dow % REST_TIPS.length]
+
+  const handleLog = (t) => {
+    onLogWorkout(t)
+    setConfirmLog(null)
+  }
 
   return (
     <div style={{ padding: '24px 16px 16px', maxWidth: 480, margin: '0 auto' }}>
@@ -65,15 +72,69 @@ export default function HomeScreen({ onStartWorkout, history, program }) {
             </p>
             <button
               onClick={() => onStartWorkout(type)}
-              style={{ width: '100%', padding: '16px 0', borderRadius: 12, background: cfg.color, color: '#fff', fontSize: 17, fontWeight: 700, border: 'none', cursor: 'pointer', minHeight: 44 }}
+              style={{ width: '100%', padding: '16px 0', borderRadius: 12, background: cfg.color, color: '#fff', fontSize: 17, fontWeight: 700, border: 'none', cursor: 'pointer', minHeight: 44, marginBottom: 10 }}
             >
               Start Workout
             </button>
+            {confirmLog === type ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setConfirmLog(null)}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleLog(type)}
+                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
+                >
+                  Yes, log as done
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmLog(type)}
+                style={{ width: '100%', padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#555452', fontSize: 13, border: '1px solid #2A2A28', cursor: 'pointer', minHeight: 36 }}
+              >
+                Already did it? Log as done
+              </button>
+            )}
           </>
         ) : (
           <>
             <p style={{ color: '#888780', fontSize: 14, marginBottom: 8 }}>Recovery day.</p>
-            <p style={{ color: '#888780', fontSize: 13, lineHeight: 1.5 }}>💡 {restTip}</p>
+            <p style={{ color: '#888780', fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>💡 {restTip}</p>
+            {confirmLog ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setConfirmLog(null)}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleLog(confirmLog)}
+                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
+                >
+                  Log {confirmLog === 'upper' ? 'Upper' : 'Lower'} Day
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setConfirmLog('upper')}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'rgba(24,95,165,0.15)', color: '#60a5fa', fontSize: 13, fontWeight: 600, border: '1px solid rgba(24,95,165,0.35)', cursor: 'pointer', minHeight: 36 }}
+                >
+                  Log Upper Day
+                </button>
+                <button
+                  onClick={() => setConfirmLog('lower')}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'rgba(15,110,86,0.15)', color: '#34d399', fontSize: 13, fontWeight: 600, border: '1px solid rgba(15,110,86,0.35)', cursor: 'pointer', minHeight: 36 }}
+                >
+                  Log Lower Day
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
