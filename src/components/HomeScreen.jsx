@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SCHEDULE, DAY_NAMES } from '../data/defaultProgram'
+import { DAY_NAMES, TYPE_CONFIG } from '../data/defaultProgram'
 
 function greeting() {
   const h = new Date().getHours()
@@ -16,19 +16,18 @@ const REST_TIPS = [
   'Hit your protein target today — recovery happens at the table.',
 ]
 
-const TYPE_CONFIG = {
-  upper: { label: 'Upper Day', color: '#185FA5', bg: 'rgba(24,95,165,0.12)', border: 'rgba(24,95,165,0.35)', text: '#60a5fa' },
-  lower: { label: 'Lower Day', color: '#0F6E56', bg: 'rgba(15,110,86,0.12)', border: 'rgba(15,110,86,0.35)', text: '#34d399' },
-  rest:  { label: 'Rest Day',  color: '#888780', bg: 'rgba(136,135,128,0.08)', border: 'rgba(136,135,128,0.2)', text: '#888780' },
-}
-
 export default function HomeScreen({ onStartWorkout, onLogWorkout, history, program }) {
-  const [confirmLog, setConfirmLog] = useState(null) // 'upper' | 'lower' | null
+  const [confirmLog, setConfirmLog] = useState(null) // routineId | null
+  const [showLogPicker, setShowLogPicker] = useState(false)
   const now = new Date()
   const dow = now.getDay()
-  const type = SCHEDULE[dow]
-  const cfg = TYPE_CONFIG[type]
-  const exercises = type !== 'rest' ? program[type] : []
+  const routineId = program.schedule[dow]
+  const isRest = routineId === 'rest'
+  const routine = isRest ? null : program.routines[routineId]
+  const type = routine?.type || 'rest'
+  const cfg = { ...TYPE_CONFIG[type] }
+  if (routine) cfg.label = routine.name
+  const exercises = routine?.exercises || []
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0)
   const streak = calcStreak(history)
   const lastW = history[0]
@@ -65,37 +64,24 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
           )}
         </div>
 
-        {type !== 'rest' ? (
+        {!isRest ? (
           <>
             <p style={{ color: '#888780', fontSize: 13, marginBottom: 16 }}>
               {exercises.length} exercises · {totalSets} total sets
             </p>
             <button
-              onClick={() => onStartWorkout(type)}
+              onClick={() => onStartWorkout(routineId)}
               style={{ width: '100%', padding: '16px 0', borderRadius: 12, background: cfg.color, color: '#fff', fontSize: 17, fontWeight: 700, border: 'none', cursor: 'pointer', minHeight: 44, marginBottom: 10 }}
             >
               Start Workout
             </button>
-            {confirmLog === type ? (
+            {confirmLog === routineId ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setConfirmLog(null)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleLog(type)}
-                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
-                >
-                  Yes, log as done
-                </button>
+                <button onClick={() => setConfirmLog(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Cancel</button>
+                <button onClick={() => handleLog(routineId)} style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Yes, log as done</button>
               </div>
             ) : (
-              <button
-                onClick={() => setConfirmLog(type)}
-                style={{ width: '100%', padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#555452', fontSize: 13, border: '1px solid #2A2A28', cursor: 'pointer', minHeight: 36 }}
-              >
+              <button onClick={() => setConfirmLog(routineId)} style={{ width: '100%', padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#555452', fontSize: 13, border: '1px solid #2A2A28', cursor: 'pointer', minHeight: 36 }}>
                 Already did it? Log as done
               </button>
             )}
@@ -106,34 +92,23 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
             <p style={{ color: '#888780', fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>💡 {restTip}</p>
             {confirmLog ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setConfirmLog(null)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleLog(confirmLog)}
-                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}
-                >
-                  Log {confirmLog === 'upper' ? 'Upper' : 'Lower'} Day
-                </button>
+                <button onClick={() => setConfirmLog(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#2A2A28', color: '#888780', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Cancel</button>
+                <button onClick={() => handleLog(confirmLog)} style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Log {program.routines[confirmLog]?.name}</button>
+              </div>
+            ) : showLogPicker ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {Object.values(program.routines).map(r => (
+                  <button key={r.id} onClick={() => { setShowLogPicker(false); setConfirmLog(r.id) }}
+                    style={{ padding: '10px 14px', borderRadius: 10, background: r.type === 'upper' ? 'rgba(24,95,165,0.15)' : 'rgba(15,110,86,0.15)', color: r.type === 'upper' ? '#60a5fa' : '#34d399', fontSize: 13, fontWeight: 600, border: `1px solid ${r.type === 'upper' ? 'rgba(24,95,165,0.35)' : 'rgba(15,110,86,0.35)'}`, cursor: 'pointer', minHeight: 44, textAlign: 'left' }}>
+                    {r.name}
+                  </button>
+                ))}
+                <button onClick={() => setShowLogPicker(false)} style={{ padding: '8px 0', borderRadius: 10, background: 'transparent', color: '#555452', fontSize: 13, border: 'none', cursor: 'pointer' }}>Cancel</button>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => setConfirmLog('upper')}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'rgba(24,95,165,0.15)', color: '#60a5fa', fontSize: 13, fontWeight: 600, border: '1px solid rgba(24,95,165,0.35)', cursor: 'pointer', minHeight: 36 }}
-                >
-                  Log Upper Day
-                </button>
-                <button
-                  onClick={() => setConfirmLog('lower')}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'rgba(15,110,86,0.15)', color: '#34d399', fontSize: 13, fontWeight: 600, border: '1px solid rgba(15,110,86,0.35)', cursor: 'pointer', minHeight: 36 }}
-                >
-                  Log Lower Day
-                </button>
-              </div>
+              <button onClick={() => setShowLogPicker(true)} style={{ width: '100%', padding: '10px 0', borderRadius: 10, background: 'transparent', color: '#555452', fontSize: 13, border: '1px solid #2A2A28', cursor: 'pointer', minHeight: 36 }}>
+                Log a workout anyway
+              </button>
             )}
           </>
         )}
@@ -144,7 +119,9 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
         <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>This Week</p>
         <div style={{ display: 'flex', gap: 6 }}>
           {[1, 2, 3, 4, 5, 6, 0].map(d => {
-            const t = SCHEDULE[d]
+            const rId = program.schedule[d]
+            const r = program.routines[rId]
+            const t = r?.type || 'rest'
             const isToday = d === dow
             const dot = t === 'upper' ? '#185FA5' : t === 'lower' ? '#0F6E56' : '#2A2A28'
             return (

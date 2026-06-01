@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault } from './services/storage'
-import { SCHEDULE } from './data/defaultProgram'
+// SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
 import CompletionScreen from './components/CompletionScreen'
@@ -59,13 +59,16 @@ export default function App() {
     saveProgram(p)
   }
 
-  const startWorkout = (type) => {
-    const exercises = program[type]
+  const startWorkout = (routineId) => {
+    const routine = program.routines[routineId]
+    if (!routine) return
     const newSession = {
-      type,
+      routineId,
+      routineName: routine.name,
+      type: routine.type,
       startTime: Date.now(),
       date: new Date().toLocaleDateString('en-CA'),
-      exerciseStates: exercises.map(e => ({
+      exerciseStates: routine.exercises.map(e => ({
         id: e.id,
         name: e.name,
         completedSets: Array(e.sets).fill(false),
@@ -95,18 +98,21 @@ export default function App() {
     setSession(null)
   }
 
-  const logWorkout = (type) => {
-    const exercises = program[type]
+  const logWorkout = (routineId) => {
+    const routine = program.routines[routineId]
+    if (!routine) return
     const now = Date.now()
     const record = {
       id: now,
-      type,
+      routineId,
+      routineName: routine.name,
+      type: routine.type,
       date: new Date().toLocaleDateString('en-CA'),
       startTime: now - 60 * 60 * 1000,
       completedAt: now,
       duration: 60,
       loggedManually: true,
-      exerciseStates: exercises.map(e => ({
+      exerciseStates: routine.exercises.map(e => ({
         id: e.id,
         name: e.name,
         completedSets: Array(e.sets).fill(true),
@@ -116,7 +122,7 @@ export default function App() {
     const next = [record, ...history]
     setHistory(next)
     saveHistory(next)
-    pushToast(`${type === 'upper' ? 'Upper' : 'Lower'} Day logged ✓`)
+    pushToast(`${routine.name} logged ✓`)
   }
 
   const doneComplete = () => {
@@ -146,7 +152,7 @@ export default function App() {
     return <CompletionScreen session={completedSession} program={program} onDone={doneComplete} />
   }
 
-  const todayType = SCHEDULE[new Date().getDay()]
+  const todayRoutineId = program.schedule[new Date().getDay()]
 
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F0E', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -163,7 +169,7 @@ export default function App() {
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, background: '#1C1C1A', borderTop: '1px solid #2A2A28', display: 'flex', zIndex: 50 }}>
         <NavBtn active={tab === 'home'} onClick={() => setTab('home')} label="Home" icon={<HomeIcon />} />
         <NavBtn active={tab === 'history'} onClick={() => setTab('history')} label="History" icon={<HistoryIcon />} />
-        <WorkoutNavBtn todayType={todayType} onStart={() => startWorkout(todayType)} active={false} />
+        <WorkoutNavBtn todayRoutineId={todayRoutineId} onStart={() => startWorkout(todayRoutineId)} active={false} />
         <NavBtn active={tab === 'program'} onClick={() => setTab('program')} label="Program" icon={<ProgramIcon />} />
         <NavBtn active={tab === 'settings'} onClick={() => setTab('settings')} label="Settings" icon={<SettingsIcon />} />
       </nav>
@@ -183,8 +189,8 @@ function NavBtn({ active, onClick, label, icon }) {
   )
 }
 
-function WorkoutNavBtn({ todayType, onStart, active }) {
-  const isRestDay = todayType === 'rest'
+function WorkoutNavBtn({ todayRoutineId, onStart, active }) {
+  const isRestDay = todayRoutineId === 'rest'
   return (
     <button
       onClick={isRestDay ? undefined : onStart}

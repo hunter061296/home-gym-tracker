@@ -13,11 +13,11 @@ export default function WorkoutSession({ session, program, onUpdate, onComplete,
   const timerRef = useRef(null)
   const settingsRef = useRef(loadTimerSettings())
 
-  const exercises = program[session.type]
+  const exercises = program.routines[session.routineId]?.exercises || program.routines[Object.keys(program.routines)[0]]?.exercises || []
   const completedCount = session.exerciseStates.filter(s => s.completedSets.every(Boolean)).length
   const allDone = completedCount === exercises.length
   const progress = completedCount / exercises.length
-  const typeLabel = session.type === 'upper' ? 'Upper Day' : 'Lower Day'
+  const typeLabel = session.routineName || (session.type === 'upper' ? 'Upper Day' : 'Lower Day')
   const typeColor = session.type === 'upper' ? '#185FA5' : '#0F6E56'
 
   // Keep timerRef in sync with state (needed for the stable interval)

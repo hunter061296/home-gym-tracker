@@ -36,6 +36,7 @@ export default function HistoryTab({ history, onClear }) {
           const exerciseCount = session.exerciseStates.length
           const isOpen = expanded === session.id
           const isUpper = session.type === 'upper'
+          const displayName = session.routineName || (isUpper ? 'Upper Day' : 'Lower Day')
 
           return (
             <div key={session.id} style={{ background: '#1C1C1A', borderRadius: 14, overflow: 'hidden', border: '1px solid #2A2A28' }}>
@@ -49,7 +50,7 @@ export default function HistoryTab({ history, onClear }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                     <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: 0 }}>
-                      {isUpper ? 'Upper Day' : 'Lower Day'}
+                      {displayName}
                     </p>
                     <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: isUpper ? '#1e3a5f' : '#0d3d2a', color: isUpper ? '#60a5fa' : '#34d399' }}>
                       {completedExs === exerciseCount ? 'Full' : `${completedExs}/${exerciseCount}`}

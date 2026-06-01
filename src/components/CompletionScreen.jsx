@@ -1,5 +1,5 @@
 export default function CompletionScreen({ session, program, onDone }) {
-  const exercises = program[session.type]
+  const exercises = program.routines[session.routineId]?.exercises || program.routines[Object.keys(program.routines)[0]]?.exercises || []
   const totalSets = session.exerciseStates.reduce((s, e) => s + e.completedSets.filter(Boolean).length, 0)
   const completedExs = session.exerciseStates.filter(s => s.completedSets.every(Boolean)).length
 

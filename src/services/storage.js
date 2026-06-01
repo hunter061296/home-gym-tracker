@@ -22,33 +22,61 @@ export function saveTimerSettings(s) {
   localStorage.setItem('timer_settings', JSON.stringify(s))
 }
 
-// Fields we always sync from DEFAULT_PROGRAM for default exercises,
-// so they stay current even if the user has an older saved program.
+// Fields we always sync from DEFAULT_PROGRAM for built-in exercises so they stay current.
 const SYNC_FIELDS = ['instructions', 'target', 'secondaryMuscles', 'yImages', 'svgKey']
+
+function buildDefaultById() {
+  const map = {}
+  for (const routine of Object.values(DEFAULT_PROGRAM.routines)) {
+    for (const ex of routine.exercises) map[ex.id] = ex
+  }
+  return map
+}
+
+function syncExercises(exercises, defaultById) {
+  return exercises.map(ex => {
+    const def = defaultById[ex.id]
+    if (!def) return ex
+    const synced = { ...ex }
+    for (const field of SYNC_FIELDS) {
+      if (def[field] !== undefined) synced[field] = def[field]
+      else delete synced[field]
+    }
+    return synced
+  })
+}
 
 export function loadProgram() {
   try {
-    const s = localStorage.getItem('workout_program')
-    if (s) {
-      const saved = JSON.parse(s)
-      const defaultById = {}
-      for (const ex of [...DEFAULT_PROGRAM.upper, ...DEFAULT_PROGRAM.lower]) {
-        defaultById[ex.id] = ex
-      }
-      const merge = exercises => exercises.map(ex => {
-        const def = defaultById[ex.id]
-        if (!def) return ex // custom exercise — leave untouched
-        const synced = { ...ex }
-        for (const field of SYNC_FIELDS) {
-          if (def[field] !== undefined) synced[field] = def[field]
-          else delete synced[field]
-        }
-        return synced
-      })
-      return { ...saved, upper: merge(saved.upper || []), lower: merge(saved.lower || []) }
+    const raw = localStorage.getItem('workout_program')
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
+
+    const saved = JSON.parse(raw)
+    const defaultById = buildDefaultById()
+
+    // ── Migrate old flat format (has upper/lower arrays) ──────────────────────
+    if (Array.isArray(saved.upper) || Array.isArray(saved.lower)) {
+      const result = JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
+      if (Array.isArray(saved.upper))
+        result.routines['upper-a'].exercises = syncExercises(saved.upper, defaultById)
+      if (Array.isArray(saved.lower))
+        result.routines['lower-a'].exercises = syncExercises(saved.lower, defaultById)
+      return result
     }
-  } catch {}
-  return JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
+
+    // ── New format: sync built-in exercise fields in all routines ─────────────
+    const syncedRoutines = {}
+    for (const [id, routine] of Object.entries(saved.routines || {})) {
+      syncedRoutines[id] = { ...routine, exercises: syncExercises(routine.exercises || [], defaultById) }
+    }
+
+    return {
+      routines: syncedRoutines,
+      schedule: saved.schedule || JSON.parse(JSON.stringify(DEFAULT_PROGRAM.schedule)),
+    }
+  } catch {
+    return JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
+  }
 }
 
 export function saveProgram(p) {
