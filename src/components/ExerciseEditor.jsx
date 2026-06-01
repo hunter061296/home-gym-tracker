@@ -4,7 +4,7 @@ import EditExerciseModal from './EditExerciseModal'
 import ExerciseSearchModal from './ExerciseSearchModal'
 import ExerciseModal from './ExerciseModal'
 
-export default function ExerciseEditor({ program, onUpdateProgram, onAddToast }) {
+export default function ExerciseEditor({ program, onUpdateProgram, onAddToast, aclMode }) {
   const routineIds = Object.keys(program.routines || {})
   const [activeRoutineId, setActiveRoutineId] = useState(routineIds[0] || null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
@@ -349,6 +349,7 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast })
           targetDay={routine?.type || 'upper'}
           onAdd={addFromSearch}
           onClose={() => setShowSearch(false)}
+          aclMode={aclMode}
         />
       )}
     </div>

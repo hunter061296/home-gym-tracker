@@ -22,6 +22,18 @@ export function saveTimerSettings(s) {
   localStorage.setItem('timer_settings', JSON.stringify(s))
 }
 
+export function loadAclMode() {
+  try {
+    const v = localStorage.getItem('acl_mode')
+    if (v !== null) return JSON.parse(v)
+  } catch {}
+  return true
+}
+
+export function saveAclMode(v) {
+  localStorage.setItem('acl_mode', JSON.stringify(v))
+}
+
 // Fields we always sync from DEFAULT_PROGRAM for built-in exercises so they stay current.
 const SYNC_FIELDS = ['instructions', 'target', 'secondaryMuscles', 'yImages', 'svgKey']
 

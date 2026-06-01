@@ -4,7 +4,7 @@ import { filterExercises, MUSCLE_GROUPS, EQUIPMENT_GROUPS, YUHONAS_BASE } from '
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 const LOWER_MUSCLES = ['glutes', 'hamstrings', 'quadriceps', 'calves']
 
-export default function ExerciseSearchModal({ targetDay, onAdd, onClose }) {
+export default function ExerciseSearchModal({ targetDay, onAdd, onClose, aclMode = true }) {
   const [query, setQuery] = useState('')
   const [activeMuscle, setActiveMuscle] = useState(null)
   const [activeEquip, setActiveEquip] = useState(null)
@@ -97,10 +97,10 @@ export default function ExerciseSearchModal({ targetDay, onAdd, onClose }) {
             ))}
           </div>
 
-          {showAclWarning && (
+          {showAclWarning && aclMode && (
             <div style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 10 }}>
               <p style={{ color: '#fbbf24', fontSize: 13, margin: 0 }}>
-                ⚠️ ACL Injury — avoid deep squats, lunges, jumps, lateral instability moves.
+                ⚠️ ACL Safe Mode on — squats, lunges, jumps are blocked for lower-day routines.
               </p>
             </div>
           )}
@@ -144,10 +144,10 @@ export default function ExerciseSearchModal({ targetDay, onAdd, onClose }) {
                       </p>
                       <button
                         onClick={() => onAdd(ex)}
-                        disabled={targetDay === 'lower' && unsafe}
-                        style={{ padding: '8px 0', borderRadius: 8, background: (targetDay === 'lower' && unsafe) ? '#2A2A28' : '#0F6E56', color: (targetDay === 'lower' && unsafe) ? '#555452' : '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: (targetDay === 'lower' && unsafe) ? 'not-allowed' : 'pointer', minHeight: 36 }}
+                        disabled={aclMode && targetDay === 'lower' && unsafe}
+                        style={{ padding: '8px 0', borderRadius: 8, background: (aclMode && targetDay === 'lower' && unsafe) ? '#2A2A28' : '#0F6E56', color: (aclMode && targetDay === 'lower' && unsafe) ? '#555452' : '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: (aclMode && targetDay === 'lower' && unsafe) ? 'not-allowed' : 'pointer', minHeight: 36 }}
                       >
-                        {targetDay === 'lower' && unsafe ? '⚠️ ACL risk' : `Add to ${targetDay === 'upper' ? 'Upper' : 'Lower'}`}
+                        {aclMode && targetDay === 'lower' && unsafe ? '⚠️ ACL risk' : `Add to ${targetDay === 'upper' ? 'Upper' : 'Lower'}`}
                       </button>
                     </div>
                   </div>

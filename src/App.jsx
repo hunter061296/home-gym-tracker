@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault } from './services/storage'
+import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode } from './services/storage'
 // SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
@@ -17,6 +17,9 @@ export default function App() {
   const [history, setHistory] = useState(loadHistory)
   const [program, setProgram] = useState(loadProgram)
   const [toasts, setToasts] = useState([])
+  const [aclMode, setAclMode] = useState(loadAclMode)
+
+  const updateAclMode = (v) => { setAclMode(v); saveAclMode(v) }
 
   const pushToast = (msg, type = 'info') => {
     const id = Date.now()
@@ -161,8 +164,8 @@ export default function App() {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         {tab === 'home' && <HomeScreen onStartWorkout={startWorkout} onLogWorkout={logWorkout} history={history} program={program} />}
         {tab === 'history' && <HistoryTab history={history} onClear={() => { saveHistory([]); setHistory([]) }} />}
-        {tab === 'program' && <ExerciseEditor program={program} onUpdateProgram={updateProgram} onAddToast={pushToast} />}
-        {tab === 'settings' && <SettingsTab onResetProgram={() => { updateProgram(resetToDefault()); pushToast('Program reset to defaults') }} history={history} />}
+        {tab === 'program' && <ExerciseEditor program={program} onUpdateProgram={updateProgram} onAddToast={pushToast} aclMode={aclMode} />}
+        {tab === 'settings' && <SettingsTab onResetProgram={() => { updateProgram(resetToDefault()); pushToast('Program reset to defaults') }} history={history} aclMode={aclMode} onAclModeChange={updateAclMode} />}
       </div>
 
       {/* Bottom nav */}

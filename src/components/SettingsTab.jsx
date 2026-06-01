@@ -14,7 +14,7 @@ const OVERLOAD_LADDER = [
 
 const CAT_LABELS = { compound: 'Compound', isolation: 'Isolation', rehab: 'Rehab / Band', core: 'Core' }
 
-export default function SettingsTab({ onResetProgram, history }) {
+export default function SettingsTab({ onResetProgram, history, aclMode, onAclModeChange }) {
   const [deloadDate, setDeloadDate] = useState(loadDeloadDate)
   const [confirmReset, setConfirmReset] = useState(false)
   const [timerSettings, setTimerSettings] = useState(loadTimerSettings)
@@ -130,16 +130,27 @@ export default function SettingsTab({ onResetProgram, history }) {
       <h1 style={{ color: '#F0EEE8', fontSize: 24, fontWeight: 700, marginBottom: 20 }}>Settings</h1>
 
       {/* ACL Mode */}
-      <Section title="ACL Mode">
-        <div style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.35)', borderRadius: 12, padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 20 }}>🦵</span>
-            <p style={{ color: '#fbbf24', fontSize: 15, fontWeight: 700, margin: 0 }}>ACL Mode — Always On</p>
+      <Section title="ACL Safe Mode">
+        <div style={{ background: aclMode ? 'rgba(217,119,6,0.12)' : '#1C1C1A', border: `1px solid ${aclMode ? 'rgba(217,119,6,0.35)' : '#2A2A28'}`, borderRadius: 12, padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: aclMode ? 8 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 20 }}>🦵</span>
+              <p style={{ color: aclMode ? '#fbbf24' : '#888780', fontSize: 15, fontWeight: 700, margin: 0 }}>
+                ACL Safe Mode {aclMode ? 'On' : 'Off'}
+              </p>
+            </div>
+            <button
+              onClick={() => onAclModeChange(!aclMode)}
+              style={{ width: 48, height: 28, borderRadius: 14, background: aclMode ? '#f59e0b' : '#2A2A28', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms', flexShrink: 0 }}
+            >
+              <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 4, left: aclMode ? 24 : 4, transition: 'left 200ms' }} />
+            </button>
           </div>
-          <p style={{ color: '#888780', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-            All lower-day exercises are knee-safe: hip-dominant, zero deep knee flexion under load, zero lateral instability movements.
-            When browsing exercises, unsafe movements (squats, lunges, jumps) are flagged automatically.
-          </p>
+          {aclMode && (
+            <p style={{ color: '#888780', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+              Deep squats, lunges, and jumps are blocked from lower-day routines. Disable to add any exercise freely.
+            </p>
+          )}
         </div>
       </Section>
 
