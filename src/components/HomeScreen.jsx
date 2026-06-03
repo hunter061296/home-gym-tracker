@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { DAY_NAMES, TYPE_CONFIG } from '../data/defaultProgram'
+import { loadBodyweight } from '../services/storage'
+import MiniChart from './MiniChart'
 
 function greeting() {
   const h = new Date().getHours()
@@ -32,6 +34,10 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
   const streak = calcStreak(history)
   const lastW = history[0]
   const restTip = REST_TIPS[dow % REST_TIPS.length]
+  const bodyweight = loadBodyweight()
+  const bwCurrent = bodyweight[bodyweight.length - 1]
+  const bwPrev = bodyweight[bodyweight.length - 2]
+  const bwDelta = bwCurrent && bwPrev ? bwCurrent.weight - bwPrev.weight : null
 
   const handleLog = (t) => {
     onLogWorkout(t)
@@ -151,7 +157,7 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: bwCurrent ? 12 : 24 }}>
         <StatCard label="Streak" value={`${streak}w`} sub="consecutive weeks" />
         <StatCard
           label="Last Workout"
@@ -159,6 +165,32 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
           sub={lastW ? cap(lastW.type) + ' Day' : 'none yet'}
         />
       </div>
+
+      {/* Bodyweight */}
+      {bwCurrent && (
+        <div style={{ background: '#1C1C1A', borderRadius: 12, padding: 16, border: '1px solid #2A2A28', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flexShrink: 0 }}>
+            <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Bodyweight</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ color: '#F0EEE8', fontSize: 24, fontWeight: 700 }}>{bwCurrent.weight}</span>
+              <span style={{ color: '#888780', fontSize: 13, fontWeight: 600 }}>kg</span>
+            </div>
+            {bwDelta !== null && bwDelta !== 0 && (
+              <p style={{ color: bwDelta < 0 ? '#34d399' : '#fbbf24', fontSize: 12, margin: '2px 0 0' }}>
+                {bwDelta < 0 ? '▼' : '▲'} {Math.abs(bwDelta).toFixed(1)}kg
+              </p>
+            )}
+            {(bwDelta === null || bwDelta === 0) && (
+              <p style={{ color: '#555452', fontSize: 12, margin: '2px 0 0' }}>{fmtDate(bwCurrent.date)}</p>
+            )}
+          </div>
+          {bodyweight.length >= 2 && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <MiniChart values={bodyweight.map(b => b.weight)} color="#185FA5" height={56} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Today's exercise list preview */}
       {type !== 'rest' && (
