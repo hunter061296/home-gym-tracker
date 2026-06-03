@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { doneCount, totalSets as countSets, isExerciseComplete, formatSetsSummary } from '../utils/sets'
+import ProgressView from './ProgressView'
 
 export default function HistoryTab({ history, onClear }) {
   const [expanded, setExpanded] = useState(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [mode, setMode] = useState('sessions') // 'sessions' | 'progress'
 
   if (!history.length) {
     return (
@@ -22,14 +24,32 @@ export default function HistoryTab({ history, onClear }) {
           <h1 style={{ color: '#F0EEE8', fontSize: 24, fontWeight: 700, marginBottom: 2 }}>History</h1>
           <p style={{ color: '#888780', fontSize: 14, margin: 0 }}>{history.length} workout{history.length !== 1 ? 's' : ''} logged</p>
         </div>
-        <button
-          onClick={() => setConfirmClear(true)}
-          style={{ color: '#DC2626', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0', minHeight: 44 }}
-        >
-          Clear all
-        </button>
+        {mode === 'sessions' && (
+          <button
+            onClick={() => setConfirmClear(true)}
+            style={{ color: '#DC2626', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0', minHeight: 44 }}
+          >
+            Clear all
+          </button>
+        )}
       </div>
 
+      {/* Sessions / Progress toggle */}
+      <div style={{ display: 'flex', gap: 4, background: '#1C1C1A', borderRadius: 12, padding: 4, marginBottom: 16, border: '1px solid #2A2A28' }}>
+        {['sessions', 'progress'].map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, minHeight: 40, textTransform: 'capitalize', background: mode === m ? '#0F6E56' : 'transparent', color: mode === m ? '#fff' : '#888780' }}
+          >
+            {m === 'sessions' ? 'Sessions' : 'Progress'}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'progress' && <ProgressView history={history} />}
+
+      {mode === 'sessions' && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {history.map(session => {
           const totalSets = session.exerciseStates.reduce((s, e) => s + doneCount(e), 0)
@@ -97,6 +117,7 @@ export default function HistoryTab({ history, onClear }) {
           )
         })}
       </div>
+      )}
 
       {/* Confirm clear */}
       {confirmClear && (

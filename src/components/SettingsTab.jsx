@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { loadDeloadDate, saveDeloadDate, loadTimerSettings, saveTimerSettings } from '../services/storage'
+import { useState, useRef } from 'react'
+import { loadDeloadDate, saveDeloadDate, loadTimerSettings, saveTimerSettings, loadBodyweight, saveBodyweight, exportAllData, importAllData } from '../services/storage'
 import { playBeep, initAudioContext } from '../services/timerAudio'
+import MiniChart from './MiniChart'
 
 const OVERLOAD_LADDER = [
   { n: 1, title: 'Add reps',        body: 'Hit the top of your rep range (e.g. 12 reps) for all sets before moving up.' },
@@ -14,12 +15,65 @@ const OVERLOAD_LADDER = [
 
 const CAT_LABELS = { compound: 'Compound', isolation: 'Isolation', rehab: 'Rehab / Band', core: 'Core' }
 
-export default function SettingsTab({ onResetProgram, history, aclMode, onAclModeChange }) {
+export default function SettingsTab({ onResetProgram, history, aclMode, onAclModeChange, plateIncrements = [], onPlateIncrementsChange, onToast }) {
   const [deloadDate, setDeloadDate] = useState(loadDeloadDate)
   const [confirmReset, setConfirmReset] = useState(false)
   const [timerSettings, setTimerSettings] = useState(loadTimerSettings)
   const [notifStatus, setNotifStatus] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [bodyweight, setBodyweight] = useState(loadBodyweight)
+  const [bwInput, setBwInput] = useState('')
+  const [incInput, setIncInput] = useState('')
+  const fileInputRef = useRef(null)
+
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(exportAllData(), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `gym-backup-${new Date().toLocaleDateString('en-CA')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    onToast?.('Backup exported')
+  }
+
+  const handleImportFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        importAllData(JSON.parse(reader.result))
+        onToast?.('Backup restored — reloading…')
+        setTimeout(() => window.location.reload(), 700)
+      } catch (err) {
+        onToast?.(`Import failed: ${err.message}`)
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const addIncrement = () => {
+    const n = parseFloat(incInput)
+    if (!n || n <= 0 || plateIncrements.includes(n)) { setIncInput(''); return }
+    onPlateIncrementsChange([...plateIncrements, n].sort((a, b) => a - b))
+    setIncInput('')
+  }
+
+  const removeIncrement = (n) => onPlateIncrementsChange(plateIncrements.filter(x => x !== n))
+
+  const logBodyweight = () => {
+    const n = parseFloat(bwInput)
+    if (!n || n <= 0) return
+    const today = new Date().toLocaleDateString('en-CA')
+    const next = [...bodyweight.filter(b => b.date !== today), { date: today, weight: n }]
+      .sort((a, b) => a.date.localeCompare(b.date))
+    setBodyweight(next)
+    saveBodyweight(next)
+    setBwInput('')
+    onToast?.('Bodyweight logged')
+  }
 
   const updateTimer = (patch) => {
     setTimerSettings(prev => {
@@ -154,6 +208,35 @@ export default function SettingsTab({ onResetProgram, history, aclMode, onAclMod
         </div>
       </Section>
 
+      {/* Bodyweight */}
+      <Section title="Bodyweight">
+        <div style={{ background: '#1C1C1A', borderRadius: 12, padding: 16, border: '1px solid #2A2A28' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: bodyweight.length >= 2 ? 14 : bodyweight.length === 1 ? 12 : 0 }}>
+            <input
+              inputMode="decimal"
+              value={bwInput}
+              onChange={e => setBwInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && logBodyweight()}
+              placeholder={bodyweight.length ? `${bodyweight[bodyweight.length - 1].weight} kg` : 'e.g. 79'}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 10, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 15, outline: 'none', boxSizing: 'border-box' }}
+            />
+            <button onClick={logBodyweight} style={{ padding: '10px 18px', borderRadius: 10, background: '#185FA5', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Log kg</button>
+          </div>
+          {bodyweight.length >= 2 && (
+            <>
+              <MiniChart values={bodyweight.map(b => b.weight)} color="#185FA5" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                <span style={{ color: '#555452', fontSize: 12 }}>{fmtShortDate(bodyweight[0].date)}</span>
+                <span style={{ color: '#888780', fontSize: 12 }}>{bodyweight[bodyweight.length - 1].weight}kg now</span>
+              </div>
+            </>
+          )}
+          {bodyweight.length === 1 && (
+            <p style={{ color: '#888780', fontSize: 13, margin: 0 }}>Logged {bodyweight[0].weight}kg. Add another entry to see a trend.</p>
+          )}
+        </div>
+      </Section>
+
       {/* Deload */}
       <Section title="Deload Tracker">
         {deloadWarning && (
@@ -271,6 +354,41 @@ export default function SettingsTab({ onResetProgram, history, aclMode, onAclMod
         </div>
       </Section>
 
+      {/* Weight quick-pick increments */}
+      <Section title="Weight Quick-Pick">
+        <p style={{ color: '#888780', fontSize: 13, marginBottom: 12 }}>Tap these chips during a workout to fill a set's weight. Customize them to match your dumbbells.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          {plateIncrements.map(inc => (
+            <span key={inc} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 6px 6px 12px', borderRadius: 16, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14 }}>
+              {inc}
+              <button onClick={() => removeIncrement(inc)} aria-label={`Remove ${inc}kg`} style={{ width: 20, height: 20, borderRadius: '50%', background: '#2A2A28', border: 'none', color: '#888780', fontSize: 14, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </span>
+          ))}
+          {!plateIncrements.length && <span style={{ color: '#555452', fontSize: 13 }}>No values yet — add some below.</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            inputMode="decimal"
+            value={incInput}
+            onChange={e => setIncInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addIncrement()}
+            placeholder="e.g. 17.5"
+            style={{ flex: 1, padding: '10px 14px', borderRadius: 10, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 15, outline: 'none', boxSizing: 'border-box' }}
+          />
+          <button onClick={addIncrement} style={{ padding: '10px 18px', borderRadius: 10, background: '#2A2A28', color: '#F0EEE8', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Add</button>
+        </div>
+      </Section>
+
+      {/* Backup & Restore */}
+      <Section title="Backup & Restore">
+        <p style={{ color: '#888780', fontSize: 13, marginBottom: 12 }}>Your data lives only on this device. Export a backup regularly — and to move to a new phone.</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleExport} style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#0F6E56', color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Export backup</button>
+          <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#2A2A28', color: '#F0EEE8', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 44 }}>Import backup</button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleImportFile} style={{ display: 'none' }} />
+      </Section>
+
       {/* Reset */}
       <Section title="Program">
         <button
@@ -296,6 +414,13 @@ export default function SettingsTab({ onResetProgram, history, aclMode, onAclMod
       )}
     </div>
   )
+}
+
+function fmtShortDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00:00')
+  if (isNaN(d)) return ''
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 function Section({ title, children }) {

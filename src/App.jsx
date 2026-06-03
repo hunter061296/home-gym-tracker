@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode } from './services/storage'
+import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode, loadPlateIncrements, savePlateIncrements } from './services/storage'
 import { getLastPerformance } from './utils/sets'
 // SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
@@ -19,8 +19,10 @@ export default function App() {
   const [program, setProgram] = useState(loadProgram)
   const [toasts, setToasts] = useState([])
   const [aclMode, setAclMode] = useState(loadAclMode)
+  const [plateIncrements, setPlateIncrements] = useState(loadPlateIncrements)
 
   const updateAclMode = (v) => { setAclMode(v); saveAclMode(v) }
+  const updatePlateIncrements = (v) => { setPlateIncrements(v); savePlateIncrements(v) }
 
   const pushToast = (msg, type = 'info') => {
     const id = Date.now()
@@ -150,6 +152,7 @@ export default function App() {
           session={session}
           program={program}
           history={history}
+          plateIncrements={plateIncrements}
           onUpdate={setSession}
           onComplete={finishWorkout}
           onExit={exitWorkout}
@@ -159,7 +162,7 @@ export default function App() {
   }
 
   if (view === 'complete' && completedSession) {
-    return <CompletionScreen session={completedSession} program={program} onDone={doneComplete} />
+    return <CompletionScreen session={completedSession} program={program} history={history} onDone={doneComplete} />
   }
 
   const todayRoutineId = program.schedule[new Date().getDay()]
@@ -172,7 +175,7 @@ export default function App() {
         {tab === 'home' && <HomeScreen onStartWorkout={startWorkout} onLogWorkout={logWorkout} history={history} program={program} />}
         {tab === 'history' && <HistoryTab history={history} onClear={() => { saveHistory([]); setHistory([]) }} />}
         {tab === 'program' && <ExerciseEditor program={program} onUpdateProgram={updateProgram} onAddToast={pushToast} aclMode={aclMode} />}
-        {tab === 'settings' && <SettingsTab onResetProgram={() => { updateProgram(resetToDefault()); pushToast('Program reset to defaults') }} history={history} aclMode={aclMode} onAclModeChange={updateAclMode} />}
+        {tab === 'settings' && <SettingsTab onResetProgram={() => { updateProgram(resetToDefault()); pushToast('Program reset to defaults') }} history={history} aclMode={aclMode} onAclModeChange={updateAclMode} plateIncrements={plateIncrements} onPlateIncrementsChange={updatePlateIncrements} onToast={pushToast} />}
       </div>
 
       {/* Bottom nav */}

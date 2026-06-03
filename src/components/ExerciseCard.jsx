@@ -5,9 +5,10 @@ import { getSetEntries, formatSetsSummary, fmtSetShort } from '../utils/sets'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
-export default function ExerciseCard({ exercise, state, lastPerformance, onUpdateState, dayType, isPulsing, onSetComplete }) {
+export default function ExerciseCard({ exercise, state, lastPerformance, plateIncrements = [], onUpdateState, dayType, isPulsing, onSetComplete }) {
   const [showHowTo, setShowHowTo] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [activeSetIdx, setActiveSetIdx] = useState(null)
 
   const sets = getSetEntries(state)
   const allDone = sets.length > 0 && sets.every(s => s.done)
@@ -43,6 +44,23 @@ export default function ExerciseCard({ exercise, state, lastPerformance, onUpdat
     }
     updateSet(i, patch)
     if (turningOn && onSetComplete) onSetComplete(i)
+  }
+
+  const addSet = () => {
+    onUpdateState({ ...state, sets: [...sets, { weight: '', reps: '', done: false }] })
+  }
+
+  const removeLastSet = () => {
+    if (sets.length <= 1) return
+    onUpdateState({ ...state, sets: sets.slice(0, -1) })
+  }
+
+  // Quick-pick chip fills the focused set's weight, or the next unfinished set.
+  const fillWeight = (value) => {
+    const i = (activeSetIdx != null && activeSetIdx < sets.length)
+      ? activeSetIdx
+      : (nextSetIdx >= 0 ? nextSetIdx : sets.length - 1)
+    updateSet(i, { weight: String(value) })
   }
 
   // Completed + collapsed → compact row
@@ -173,7 +191,7 @@ export default function ExerciseCard({ exercise, state, lastPerformance, onUpdat
                 onChange={e => updateSet(i, { weight: e.target.value })}
                 placeholder={prev?.weight != null && prev?.weight !== '' ? String(prev.weight) : '–'}
                 style={{ width: 68, padding: '9px 8px', borderRadius: 8, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14, textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
-                onFocus={e => e.target.style.borderColor = '#0F6E56'}
+                onFocus={e => { e.target.style.borderColor = '#0F6E56'; setActiveSetIdx(i) }}
                 onBlur={e => e.target.style.borderColor = '#2A2A28'}
               />
               <input
@@ -206,6 +224,41 @@ export default function ExerciseCard({ exercise, state, lastPerformance, onUpdat
             </div>
           )
         })}
+
+        {/* Quick-fill weight chips (customizable in Settings) */}
+        {plateIncrements.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', padding: '4px 0 2px' }}>
+            <span style={{ color: '#555452', fontSize: 11, flexShrink: 0 }}>kg</span>
+            {plateIncrements.map(inc => (
+              <button
+                key={inc}
+                onClick={() => fillWeight(inc)}
+                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 16, border: '1px solid #2A2A28', background: '#0F0F0E', color: '#F0EEE8', fontSize: 13, cursor: 'pointer', minHeight: 32 }}
+              >
+                {inc}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Add / remove set */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            onClick={addSet}
+            style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px dashed #2A2A28', background: 'transparent', color: '#888780', fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40 }}
+          >
+            + Add set
+          </button>
+          {sets.length > 1 && (
+            <button
+              onClick={removeLastSet}
+              aria-label="Remove last set"
+              style={{ width: 44, borderRadius: 8, border: '1px solid #2A2A28', background: 'transparent', color: '#888780', fontSize: 18, cursor: 'pointer', minHeight: 40 }}
+            >
+              −
+            </button>
+          )}
+        </div>
       </div>
 
       {/* How-to */}

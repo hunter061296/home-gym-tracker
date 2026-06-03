@@ -115,3 +115,62 @@ export function resetToDefault() {
   localStorage.removeItem('workout_program')
   return JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
 }
+
+// ── Customizable weight quick-pick increments ────────────────────────────────
+export const DEFAULT_PLATE_INCREMENTS = [2.5, 5, 7.5, 10, 12.5, 15]
+
+export function loadPlateIncrements() {
+  try {
+    const s = localStorage.getItem('plate_increments')
+    if (s) {
+      const arr = JSON.parse(s)
+      if (Array.isArray(arr)) return arr.filter(n => typeof n === 'number' && n > 0).sort((a, b) => a - b)
+    }
+  } catch {}
+  return [...DEFAULT_PLATE_INCREMENTS]
+}
+
+export function savePlateIncrements(arr) {
+  localStorage.setItem('plate_increments', JSON.stringify(arr))
+}
+
+// ── Bodyweight log: [{ date: 'YYYY-MM-DD', weight: number }] ──────────────────
+export function loadBodyweight() {
+  try { return JSON.parse(localStorage.getItem('bodyweight_log') || '[]') } catch { return [] }
+}
+
+export function saveBodyweight(arr) {
+  localStorage.setItem('bodyweight_log', JSON.stringify(arr))
+}
+
+// ── Export / Import (full backup) ────────────────────────────────────────────
+const EXPORT_KEYS = {
+  program: 'workout_program',
+  history: 'workout_history',
+  timerSettings: 'timer_settings',
+  aclMode: 'acl_mode',
+  deloadDate: 'last_deload_date',
+  bodyweight: 'bodyweight_log',
+  plateIncrements: 'plate_increments',
+}
+
+export function exportAllData() {
+  const data = { app: 'home-gym-tracker', version: 1, exportedAt: new Date().toISOString() }
+  for (const [key, lsKey] of Object.entries(EXPORT_KEYS)) {
+    const raw = localStorage.getItem(lsKey)
+    if (raw == null) { data[key] = null; continue }
+    try { data[key] = JSON.parse(raw) } catch { data[key] = raw }
+  }
+  return data
+}
+
+export function importAllData(data) {
+  if (!data || typeof data !== 'object') throw new Error('Invalid file')
+  const known = Object.keys(EXPORT_KEYS).some(k => k in data)
+  if (!known) throw new Error('Unrecognized backup file')
+  for (const [key, lsKey] of Object.entries(EXPORT_KEYS)) {
+    if (!(key in data) || data[key] == null) continue
+    const v = data[key]
+    localStorage.setItem(lsKey, typeof v === 'string' ? v : JSON.stringify(v))
+  }
+}

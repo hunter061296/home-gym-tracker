@@ -1,9 +1,11 @@
 import { doneCount, totalSets as countSets, isExerciseComplete, formatSetsSummary } from '../utils/sets'
+import { detectPRs } from '../utils/stats'
 
-export default function CompletionScreen({ session, program, onDone }) {
+export default function CompletionScreen({ session, program, history, onDone }) {
   const exercises = program.routines[session.routineId]?.exercises || program.routines[Object.keys(program.routines)[0]]?.exercises || []
   const totalSets = session.exerciseStates.reduce((s, e) => s + doneCount(e), 0)
   const completedExs = session.exerciseStates.filter(isExerciseComplete).length
+  const prs = detectPRs(history, session.id)
 
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F0E', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
@@ -24,6 +26,25 @@ export default function CompletionScreen({ session, program, onDone }) {
           <Stat value={totalSets} unit=" sets" label="Total Sets" color="#a855f7" />
         </div>
       </div>
+
+      {/* Personal records */}
+      {prs.length > 0 && (
+        <div style={{ padding: '0 16px 20px', maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: 16 }}>
+            <p style={{ color: '#fbbf24', fontSize: 13, fontWeight: 700, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🏆 {prs.length} New Personal Record{prs.length !== 1 ? 's' : ''}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {prs.map(pr => (
+                <div key={pr.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pr.name}</span>
+                  <span style={{ color: '#fbbf24', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                    {fmtKg(pr.weight)}kg{pr.reps ? ` × ${pr.reps}` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Exercise log */}
       <div style={{ flex: 1, padding: '0 16px 24px', maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -67,6 +88,10 @@ export default function CompletionScreen({ session, program, onDone }) {
       </div>
     </div>
   )
+}
+
+function fmtKg(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
 
 function Stat({ value, unit, label, color }) {

@@ -6,7 +6,7 @@ import { getDefaultRestTime } from '../data/timerCategories'
 import { initAudioContext, playBeep } from '../services/timerAudio'
 import { isExerciseComplete, getLastPerformance } from '../utils/sets'
 
-export default function WorkoutSession({ session, program, history, onUpdate, onComplete, onExit }) {
+export default function WorkoutSession({ session, program, history, plateIncrements, onUpdate, onComplete, onExit }) {
   const [confirmExit, setConfirmExit] = useState(false)
   const [timerState, setTimerState] = useState(null)
   const [, setRenderTick] = useState(0)
@@ -188,6 +188,7 @@ export default function WorkoutSession({ session, program, history, onUpdate, on
             exercise={exercise}
             state={session.exerciseStates[i]}
             lastPerformance={lastByExercise[exercise.id]}
+            plateIncrements={plateIncrements}
             onUpdateState={s => updateState(exercise.id, s)}
             dayType={session.type}
             isPulsing={pulseExId === exercise.id}
