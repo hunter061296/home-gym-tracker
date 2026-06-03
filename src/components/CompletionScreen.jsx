@@ -1,7 +1,9 @@
+import { doneCount, totalSets as countSets, isExerciseComplete, formatSetsSummary } from '../utils/sets'
+
 export default function CompletionScreen({ session, program, onDone }) {
   const exercises = program.routines[session.routineId]?.exercises || program.routines[Object.keys(program.routines)[0]]?.exercises || []
-  const totalSets = session.exerciseStates.reduce((s, e) => s + e.completedSets.filter(Boolean).length, 0)
-  const completedExs = session.exerciseStates.filter(s => s.completedSets.every(Boolean)).length
+  const totalSets = session.exerciseStates.reduce((s, e) => s + doneCount(e), 0)
+  const completedExs = session.exerciseStates.filter(isExerciseComplete).length
 
   return (
     <div style={{ minHeight: '100dvh', background: '#0F0F0E', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
@@ -30,9 +32,10 @@ export default function CompletionScreen({ session, program, onDone }) {
           {exercises.map((ex, i) => {
             const s = session.exerciseStates[i]
             if (!s) return null
-            const done = s.completedSets.filter(Boolean).length
-            const total = s.completedSets.length
-            const complete = done === total
+            const done = doneCount(s)
+            const total = countSets(s)
+            const complete = total > 0 && done === total
+            const summary = formatSetsSummary(s)
             return (
               <div key={ex.id} style={{ background: '#1C1C1A', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #2A2A28' }}>
                 <div style={{ width: 24, height: 24, borderRadius: '50%', background: complete ? '#22C55E' : '#2A2A28', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -44,7 +47,7 @@ export default function CompletionScreen({ session, program, onDone }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ color: complete ? '#F0EEE8' : '#888780', fontSize: 14, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</p>
-                  {s.weight && <p style={{ color: '#555452', fontSize: 12, margin: 0 }}>{s.weight}</p>}
+                  {summary && <p style={{ color: '#555452', fontSize: 12, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{summary}</p>}
                 </div>
                 <span style={{ color: complete ? '#22C55E' : '#555452', fontSize: 12, flexShrink: 0 }}>{done}/{total}</span>
               </div>

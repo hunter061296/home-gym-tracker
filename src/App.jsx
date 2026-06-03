@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode } from './services/storage'
+import { getLastPerformance } from './utils/sets'
 // SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
@@ -74,8 +75,7 @@ export default function App() {
       exerciseStates: routine.exercises.map(e => ({
         id: e.id,
         name: e.name,
-        completedSets: Array(e.sets).fill(false),
-        weight: '',
+        sets: Array.from({ length: e.sets }, () => ({ weight: '', reps: '', done: false })),
       })),
     }
     setSession(newSession)
@@ -115,12 +115,18 @@ export default function App() {
       completedAt: now,
       duration: 60,
       loggedManually: true,
-      exerciseStates: routine.exercises.map(e => ({
-        id: e.id,
-        name: e.name,
-        completedSets: Array(e.sets).fill(true),
-        weight: '',
-      })),
+      exerciseStates: routine.exercises.map(e => {
+        const last = getLastPerformance(history, e.id)
+        return {
+          id: e.id,
+          name: e.name,
+          sets: Array.from({ length: e.sets }, (_, i) => ({
+            weight: last?.sets?.[i]?.weight ?? '',
+            reps: last?.sets?.[i]?.reps ?? '',
+            done: true,
+          })),
+        }
+      }),
     }
     const next = [record, ...history]
     setHistory(next)
@@ -143,6 +149,7 @@ export default function App() {
         <WorkoutSession
           session={session}
           program={program}
+          history={history}
           onUpdate={setSession}
           onComplete={finishWorkout}
           onExit={exitWorkout}

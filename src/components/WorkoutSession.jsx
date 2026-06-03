@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import ExerciseCard from './ExerciseCard'
 import RestTimer from './RestTimer'
 import { loadTimerSettings } from '../services/storage'
 import { getDefaultRestTime } from '../data/timerCategories'
 import { initAudioContext, playBeep } from '../services/timerAudio'
+import { isExerciseComplete, getLastPerformance } from '../utils/sets'
 
-export default function WorkoutSession({ session, program, onUpdate, onComplete, onExit }) {
+export default function WorkoutSession({ session, program, history, onUpdate, onComplete, onExit }) {
   const [confirmExit, setConfirmExit] = useState(false)
   const [timerState, setTimerState] = useState(null)
   const [, setRenderTick] = useState(0)
@@ -14,9 +15,16 @@ export default function WorkoutSession({ session, program, onUpdate, onComplete,
   const settingsRef = useRef(loadTimerSettings())
 
   const exercises = program.routines[session.routineId]?.exercises || program.routines[Object.keys(program.routines)[0]]?.exercises || []
-  const completedCount = session.exerciseStates.filter(s => s.completedSets.every(Boolean)).length
+  const completedCount = session.exerciseStates.filter(isExerciseComplete).length
   const allDone = completedCount === exercises.length
   const progress = completedCount / exercises.length
+
+  // Most recent logged performance per exercise — for the "last time" reference.
+  const lastByExercise = useMemo(() => {
+    const m = {}
+    for (const ex of exercises) m[ex.id] = getLastPerformance(history, ex.id)
+    return m
+  }, [history, exercises])
   const typeLabel = session.routineName || (session.type === 'upper' ? 'Upper Day' : 'Lower Day')
   const typeColor = session.type === 'upper' ? '#185FA5' : '#0F6E56'
 
@@ -178,6 +186,7 @@ export default function WorkoutSession({ session, program, onUpdate, onComplete,
             key={exercise.id}
             exercise={exercise}
             state={session.exerciseStates[i]}
+            lastPerformance={lastByExercise[exercise.id]}
             onUpdateState={s => updateState(exercise.id, s)}
             dayType={session.type}
             isPulsing={pulseExId === exercise.id}

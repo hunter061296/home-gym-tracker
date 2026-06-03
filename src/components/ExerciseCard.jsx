@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { EXERCISE_SVGS } from './ExerciseSVGs'
 import { getGifUrl, getYuhonaImages } from '../data/exerciseImages'
+import { getSetEntries, formatSetsSummary, fmtSetShort } from '../utils/sets'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
-export default function ExerciseCard({ exercise, state, onUpdateState, dayType, isPulsing, onSetComplete }) {
+export default function ExerciseCard({ exercise, state, lastPerformance, onUpdateState, dayType, isPulsing, onSetComplete }) {
   const [showHowTo, setShowHowTo] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
-  const allDone = state.completedSets.length > 0 && state.completedSets.every(Boolean)
-  const doneSets = state.completedSets.filter(Boolean).length
-  const nextSetIdx = state.completedSets.findIndex(d => !d)
+  const sets = getSetEntries(state)
+  const allDone = sets.length > 0 && sets.every(s => s.done)
+  const doneSets = sets.filter(s => s.done).length
+  const totalCount = sets.length
+  const nextSetIdx = sets.findIndex(s => !s.done)
 
   const instructions = exercise.instructions || []
   const gifUrl = getGifUrl(exercise)
@@ -23,12 +26,23 @@ export default function ExerciseCard({ exercise, state, onUpdateState, dayType, 
   const isAclUnsafe = dayType === 'lower' &&
     ACL_FLAG_WORDS.some(w => exercise.name.toLowerCase().includes(w))
 
-  const toggleSet = (i) => {
-    const wasUnchecked = !state.completedSets[i]
-    const next = [...state.completedSets]
-    next[i] = !next[i]
-    onUpdateState({ ...state, completedSets: next })
-    if (wasUnchecked && onSetComplete) onSetComplete(i)
+  const updateSet = (i, patch) => {
+    const next = sets.map((s, idx) => idx === i ? { ...s, ...patch } : s)
+    onUpdateState({ ...state, sets: next })
+  }
+
+  const toggleSetDone = (i) => {
+    const s = sets[i]
+    const turningOn = !s.done
+    const prev = lastPerformance?.sets?.[i]
+    const patch = { done: turningOn }
+    // Auto-fill from last time so a quick tap logs the same weight/reps.
+    if (turningOn) {
+      if (!s.weight && prev?.weight) patch.weight = String(prev.weight)
+      if (!s.reps && prev?.reps) patch.reps = String(prev.reps)
+    }
+    updateSet(i, patch)
+    if (turningOn && onSetComplete) onSetComplete(i)
   }
 
   // Completed + collapsed → compact row
@@ -40,9 +54,9 @@ export default function ExerciseCard({ exercise, state, onUpdateState, dayType, 
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exercise.name}</p>
-          {state.weight && <p style={{ color: '#888780', fontSize: 12, margin: 0 }}>{state.weight}</p>}
+          {formatSetsSummary(state) && <p style={{ color: '#888780', fontSize: 12, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatSetsSummary(state)}</p>}
         </div>
-        <span style={{ color: '#22C55E', fontSize: 12, flexShrink: 0 }}>{doneSets}/{exercise.sets}</span>
+        <span style={{ color: '#22C55E', fontSize: 12, flexShrink: 0 }}>{doneSets}/{totalCount}</span>
         <button onClick={() => setCollapsed(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: '#2A2A28', border: 'none', color: '#888780', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6,9 12,15 18,9" /></svg>
         </button>
@@ -124,51 +138,74 @@ export default function ExerciseCard({ exercise, state, onUpdateState, dayType, 
         {exercise.notes && <p style={{ color: '#888780', fontSize: 12, margin: '4px 0 0' }}>Note: {exercise.notes}</p>}
       </div>
 
-      {/* Sets */}
-      <div style={{ padding: '10px 16px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-          <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1, margin: 0 }}>Sets completed</p>
-          <span style={{ color: '#888780', fontSize: 12 }}>{doneSets}/{exercise.sets}</span>
+      {/* Sets — per-set weight + reps logging */}
+      <div style={{ padding: '10px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+          <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1, margin: 0 }}>Sets</p>
+          <span style={{ color: '#888780', fontSize: 12 }}>{doneSets}/{totalCount}</span>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {state.completedSets.map((done, i) => {
-            const isNext = isPulsing && i === nextSetIdx
-            return (
-            <button
-              key={i}
-              onClick={() => toggleSet(i)}
-              style={{
-                width: 44, height: 44, borderRadius: '50%',
-                border: `2px solid ${done ? '#22C55E' : isNext ? '#0F6E56' : '#2A2A28'}`,
-                background: done ? '#22C55E' : '#0F0F0E', color: done ? '#fff' : isNext ? '#0F6E56' : '#888780',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                fontWeight: 700, fontSize: 15, flexShrink: 0,
-                animation: isNext ? 'setGlow 1s ease-in-out infinite' : 'none',
-                transition: 'transform 100ms, border-color 300ms',
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-              onTouchStart={e => e.currentTarget.style.transform = 'scale(0.9)'}
-              onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              {done ? <Check size={16} /> : <span>{i + 1}</span>}
-            </button>
-            )
-          })}
-        </div>
-      </div>
 
-      {/* Weight input */}
-      <div style={{ padding: '0 16px 12px' }}>
-        <input
-          type="text"
-          value={state.weight}
-          onChange={e => onUpdateState({ ...state, weight: e.target.value })}
-          placeholder="Weight / notes (e.g. 12.5kg each)"
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-          onFocus={e => e.target.style.borderColor = '#0F6E56'}
-          onBlur={e => e.target.style.borderColor = '#2A2A28'}
-        />
+        {/* Column labels */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 0 4px' }}>
+          <span style={{ width: 26, color: '#555452', fontSize: 11, textAlign: 'center' }}>#</span>
+          <span style={{ flex: 1, color: '#555452', fontSize: 11 }}>
+            {lastPerformance ? `Prev · ${fmtDate(lastPerformance.date)}` : 'Prev'}
+          </span>
+          <span style={{ width: 68, color: '#555452', fontSize: 11, textAlign: 'center' }}>kg</span>
+          <span style={{ width: 56, color: '#555452', fontSize: 11, textAlign: 'center' }}>reps</span>
+          <span style={{ width: 40 }} />
+        </div>
+
+        {sets.map((s, i) => {
+          const prev = lastPerformance?.sets?.[i]
+          const isNext = isPulsing && i === nextSetIdx
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ width: 26, height: 36, borderRadius: 8, background: s.done ? 'rgba(34,197,94,0.12)' : '#0F0F0E', border: `1px solid ${s.done ? '#22C55E' : isNext ? '#0F6E56' : '#2A2A28'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.done ? '#22C55E' : isNext ? '#0F6E56' : '#888780', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                {i + 1}
+              </div>
+              <span style={{ flex: 1, color: '#555452', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {prev ? fmtSetShort(prev) : '—'}
+              </span>
+              <input
+                inputMode="decimal"
+                value={s.weight}
+                onChange={e => updateSet(i, { weight: e.target.value })}
+                placeholder={prev?.weight != null && prev?.weight !== '' ? String(prev.weight) : '–'}
+                style={{ width: 68, padding: '9px 8px', borderRadius: 8, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14, textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = '#0F6E56'}
+                onBlur={e => e.target.style.borderColor = '#2A2A28'}
+              />
+              <input
+                inputMode="numeric"
+                value={s.reps}
+                onChange={e => updateSet(i, { reps: e.target.value })}
+                placeholder={prev?.reps != null && prev?.reps !== '' ? String(prev.reps) : '–'}
+                style={{ width: 56, padding: '9px 8px', borderRadius: 8, background: '#0F0F0E', border: '1px solid #2A2A28', color: '#F0EEE8', fontSize: 14, textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = '#0F6E56'}
+                onBlur={e => e.target.style.borderColor = '#2A2A28'}
+              />
+              <button
+                onClick={() => toggleSetDone(i)}
+                aria-label={s.done ? `Set ${i + 1} done` : `Mark set ${i + 1} done`}
+                style={{
+                  width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                  border: `2px solid ${s.done ? '#22C55E' : isNext ? '#0F6E56' : '#2A2A28'}`,
+                  background: s.done ? '#22C55E' : '#0F0F0E', color: s.done ? '#fff' : '#888780',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  animation: isNext ? 'setGlow 1s ease-in-out infinite' : 'none',
+                  transition: 'transform 100ms, border-color 300ms',
+                }}
+                onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
+                onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                onTouchStart={e => e.currentTarget.style.transform = 'scale(0.9)'}
+                onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <Check size={15} />
+              </button>
+            </div>
+          )
+        })}
       </div>
 
       {/* How-to */}
@@ -240,4 +277,14 @@ function Check({ size = 14 }) {
       <polyline points="20,6 9,17 4,12" />
     </svg>
   )
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00:00')
+  if (isNaN(d)) return ''
+  const diff = Math.round((new Date() - d) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { doneCount, totalSets as countSets, isExerciseComplete, formatSetsSummary } from '../utils/sets'
 
 export default function HistoryTab({ history, onClear }) {
   const [expanded, setExpanded] = useState(null)
@@ -31,8 +32,8 @@ export default function HistoryTab({ history, onClear }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {history.map(session => {
-          const totalSets = session.exerciseStates.reduce((s, e) => s + e.completedSets.filter(Boolean).length, 0)
-          const completedExs = session.exerciseStates.filter(s => s.completedSets.every(Boolean)).length
+          const totalSets = session.exerciseStates.reduce((s, e) => s + doneCount(e), 0)
+          const completedExs = session.exerciseStates.filter(isExerciseComplete).length
           const exerciseCount = session.exerciseStates.length
           const isOpen = expanded === session.id
           const isUpper = session.type === 'upper'
@@ -68,8 +69,9 @@ export default function HistoryTab({ history, onClear }) {
               {isOpen && (
                 <div style={{ borderTop: '1px solid #2A2A28', padding: '12px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {session.exerciseStates.map((s, i) => {
-                    const done = s.completedSets.filter(Boolean).length
-                    const total = s.completedSets.length
+                    const done = doneCount(s)
+                    const total = countSets(s)
+                    const summary = formatSetsSummary(s)
                     return (
                       <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 20, height: 20, borderRadius: '50%', background: done === total ? '#22C55E' : '#2A2A28', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -84,7 +86,7 @@ export default function HistoryTab({ history, onClear }) {
                         </p>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <p style={{ color: '#888780', fontSize: 12, margin: 0 }}>{done}/{total}</p>
-                          {s.weight && <p style={{ color: '#555452', fontSize: 11, margin: 0, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.weight}</p>}
+                          {summary && <p style={{ color: '#555452', fontSize: 11, margin: 0, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{summary}</p>}
                         </div>
                       </div>
                     )
