@@ -39,18 +39,19 @@ export default function WorkoutSession({ session, program, history, onUpdate, on
   }, [])
 
   // Intercept Android hardware back button — show exit dialog instead of quitting
+  // Use window.history explicitly: the `history` prop (workout log) shadows the global.
   useEffect(() => {
-    history.pushState({ workoutActive: true }, '')
+    window.history.pushState({ workoutActive: true }, '')
 
     const handlePop = () => {
       setConfirmExit(prev => {
         if (prev) {
           // Dialog already open — back button closes it; re-push so next back still works
-          history.pushState({ workoutActive: true }, '')
+          window.history.pushState({ workoutActive: true }, '')
           return false
         }
         // Open dialog and push so another back press can dismiss it
-        history.pushState({ workoutActive: true }, '')
+        window.history.pushState({ workoutActive: true }, '')
         return true
       })
     }
