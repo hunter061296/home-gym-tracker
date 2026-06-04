@@ -21,6 +21,7 @@ const REST_TIPS = [
 export default function HomeScreen({ onStartWorkout, onLogWorkout, history, program }) {
   const [confirmLog, setConfirmLog] = useState(null) // routineId | null
   const [showLogPicker, setShowLogPicker] = useState(false)
+  const [showBwLog, setShowBwLog] = useState(false)
   const now = new Date()
   const dow = now.getDay()
   const routineId = program.schedule[dow]
@@ -168,26 +169,62 @@ export default function HomeScreen({ onStartWorkout, onLogWorkout, history, prog
 
       {/* Bodyweight */}
       {bwCurrent && (
-        <div style={{ background: '#1C1C1A', borderRadius: 12, padding: 16, border: '1px solid #2A2A28', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ flexShrink: 0 }}>
-            <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Bodyweight</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ color: '#F0EEE8', fontSize: 24, fontWeight: 700 }}>{bwCurrent.weight}</span>
-              <span style={{ color: '#888780', fontSize: 13, fontWeight: 600 }}>kg</span>
+        <div style={{ background: '#1C1C1A', borderRadius: 12, border: '1px solid #2A2A28', marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ flexShrink: 0 }}>
+              <p style={{ color: '#888780', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Bodyweight</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ color: '#F0EEE8', fontSize: 24, fontWeight: 700 }}>{bwCurrent.weight}</span>
+                <span style={{ color: '#888780', fontSize: 13, fontWeight: 600 }}>kg</span>
+              </div>
+              {bwDelta !== null && bwDelta !== 0 && (
+                <p style={{ color: bwDelta < 0 ? '#34d399' : '#fbbf24', fontSize: 12, margin: '2px 0 0' }}>
+                  {bwDelta < 0 ? '▼' : '▲'} {Math.abs(bwDelta).toFixed(1)}kg
+                </p>
+              )}
+              {(bwDelta === null || bwDelta === 0) && (
+                <p style={{ color: '#555452', fontSize: 12, margin: '2px 0 0' }}>{fmtDate(bwCurrent.date)}</p>
+              )}
             </div>
-            {bwDelta !== null && bwDelta !== 0 && (
-              <p style={{ color: bwDelta < 0 ? '#34d399' : '#fbbf24', fontSize: 12, margin: '2px 0 0' }}>
-                {bwDelta < 0 ? '▼' : '▲'} {Math.abs(bwDelta).toFixed(1)}kg
-              </p>
-            )}
-            {(bwDelta === null || bwDelta === 0) && (
-              <p style={{ color: '#555452', fontSize: 12, margin: '2px 0 0' }}>{fmtDate(bwCurrent.date)}</p>
+            {bodyweight.length >= 2 && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <MiniChart values={bodyweight.map(b => b.weight)} color="#185FA5" height={56} />
+              </div>
             )}
           </div>
+
           {bodyweight.length >= 2 && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <MiniChart values={bodyweight.map(b => b.weight)} color="#185FA5" height={56} />
-            </div>
+            <>
+              <button
+                onClick={() => setShowBwLog(v => !v)}
+                style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', borderTop: '1px solid #2A2A28', color: '#888780', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40 }}
+              >
+                {showBwLog ? 'Hide log' : `View log (${bodyweight.length})`}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showBwLog ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}><polyline points="6,9 12,15 18,9"/></svg>
+              </button>
+
+              {showBwLog && (
+                <div style={{ borderTop: '1px solid #2A2A28' }}>
+                  {bodyweight.slice().reverse().map((b, i, arr) => {
+                    const prev = arr[i + 1] // chronologically earlier entry
+                    const d = prev ? b.weight - prev.weight : null
+                    return (
+                      <div key={b.date} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: i === 0 ? 'none' : '1px solid #232321' }}>
+                        <span style={{ color: '#888780', fontSize: 13 }}>{fmtFullDate(b.date)}</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                          {d !== null && d !== 0 && (
+                            <span style={{ color: d < 0 ? '#34d399' : '#fbbf24', fontSize: 12 }}>
+                              {d < 0 ? '▼' : '▲'} {Math.abs(d).toFixed(1)}
+                            </span>
+                          )}
+                          <span style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, minWidth: 52, textAlign: 'right' }}>{b.weight} kg</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -265,6 +302,14 @@ function fmtDate(dateStr) {
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+function fmtFullDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  const diff = Math.round((new Date() - d) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : '' }
