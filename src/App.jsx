@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode, loadPlateIncrements, savePlateIncrements } from './services/storage'
-import { getLastPerformance, computeOverload } from './utils/sets'
+import { getLastPerformance, computeOverload, getOverloadTarget } from './utils/sets'
 // SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
@@ -75,12 +75,10 @@ export default function App() {
 
     const exerciseStates = routine.exercises.map(e => {
       const lastPerf = getLastPerformance(history, e.id)
-      const overload = computeOverload(e, lastPerf)
-      let weightOverride = ''
-      let repsOverride = null
 
+      // 1. Check if we should bump the week counter
+      const overload = computeOverload(e, lastPerf)
       if (overload) {
-        // Update the exercise's lastIncreasedWeek in the program
         const updatedEx = {
           ...e,
           progressiveOverload: { ...e.progressiveOverload, lastIncreasedWeek: overload.lastIncreasedWeek },
@@ -93,31 +91,19 @@ export default function App() {
           updatedProgram.routines[routineId] = { ...r, exercises: newExercises }
           programChanged = true
         }
-
-        if (overload.newWeight != null) {
-          weightOverride = String(overload.newWeight)
-        } else if (overload.newReps != null) {
-          repsOverride = overload.newReps
-        }
       }
+
+      // 2. Always pre-fill with the overload target (week-gated or not)
+      const target = getOverloadTarget(e, lastPerf)
+      const weightOverride = target?.weight ?? ''
+      const repsOverride = target?.reps ?? ''
 
       // Build sets — pre-fill with overloaded weight if applicable
       const sets = Array.from({ length: e.sets }, () => ({
         weight: weightOverride,
-        reps: '',
+        reps: repsOverride,
         done: false,
       }))
-
-      // If overloaded reps: set a string reps target on the first set as a reference
-      // (user still types what they actually do)
-      if (repsOverride) {
-        // We store the suggested reps as a guide – the input placeholder won't show it,
-        // so we mark it on the exercise name via a state flag.
-        // Instead, just set the first set's reps as a hint
-        if (sets.length > 0) {
-          sets[0].reps = String(repsOverride)
-        }
-      }
 
       return { id: e.id, name: e.name, sets }
     })

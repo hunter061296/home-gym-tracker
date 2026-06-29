@@ -92,25 +92,54 @@ export function computeOverload(exercise, lastPerf) {
 
   if (po.type === 'weight') {
     if (!lastPerf) return null
-    // Find the highest weight used in the last session
-    let maxWeight = 0
-    for (const s of lastPerf.sets) {
-      const w = parseFloat(s.weight)
-      if (!isNaN(w) && w > maxWeight) maxWeight = w
-    }
+    const maxWeight = getMaxWeight(lastPerf.sets)
     if (maxWeight <= 0) return null
     const newWeight = Math.round((maxWeight + po.incrementWeight) * 10) / 10
     return { newWeight, newReps: null, lastIncreasedWeek: currentWeek }
   }
 
   if (po.type === 'reps') {
-    // Parse the reps target (e.g. "8–12" → use upper bound + increment)
-    const repStr = exercise.reps || ''
-    const parts = repStr.split('–').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
-    const currentMax = parts.length > 1 ? parts[1] : (parts[0] || 10)
-    const newReps = currentMax + po.incrementReps
+    const newReps = calcRepTarget(exercise, po)
     return { newWeight: null, newReps, lastIncreasedWeek: currentWeek }
   }
 
   return null
+}
+
+// Always compute the current overload target for display, without week-gating.
+// Returns { weight: string, reps: string } with the values to pre-fill, or null.
+export function getOverloadTarget(exercise, lastPerf) {
+  const po = exercise?.progressiveOverload
+  if (!po || !po.enabled) return null
+
+  if (po.type === 'weight') {
+    if (!lastPerf) return null
+    const maxWeight = getMaxWeight(lastPerf.sets)
+    if (maxWeight <= 0) return null
+    const newWeight = Math.round((maxWeight + po.incrementWeight) * 10) / 10
+    return { weight: String(newWeight), reps: '' }
+  }
+
+  if (po.type === 'reps') {
+    const newReps = calcRepTarget(exercise, po)
+    return { weight: '', reps: String(newReps) }
+  }
+
+  return null
+}
+
+function getMaxWeight(sets) {
+  let max = 0
+  for (const s of sets || []) {
+    const w = parseFloat(s.weight)
+    if (!isNaN(w) && w > max) max = w
+  }
+  return max
+}
+
+function calcRepTarget(exercise, po) {
+  const repStr = exercise.reps || ''
+  const parts = repStr.split('–').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
+  const currentMax = parts.length > 1 ? parts[1] : (parts[0] || 10)
+  return currentMax + po.incrementReps
 }
