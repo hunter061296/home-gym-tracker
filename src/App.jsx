@@ -93,17 +93,17 @@ export default function App() {
         }
       }
 
-      // 2. Always pre-fill with the overload target (week-gated or not)
-      const target = getOverloadTarget(e, lastPerf)
-      const weightOverride = target?.weight ?? ''
-      const repsOverride = target?.reps ?? ''
+      // 2. Always pre-fill with per-set overload targets
+      const targets = getOverloadTarget(e, lastPerf)
 
-      // Build sets — pre-fill with overloaded weight if applicable
-      const sets = Array.from({ length: e.sets }, () => ({
-        weight: weightOverride,
-        reps: repsOverride,
-        done: false,
-      }))
+      const sets = Array.from({ length: e.sets }, (_, i) => {
+        const t = targets?.[i]
+        return {
+          weight: t?.weight ?? '',
+          reps: t?.reps ?? '',
+          done: false,
+        }
+      })
 
       return { id: e.id, name: e.name, sets }
     })

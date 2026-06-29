@@ -82,64 +82,63 @@ export function getLastPerformance(history, exerciseId) {
 }
 
 // Apply progressive overload to an exercise, given its definition and last performance.
-// Returns { newWeight, newReps } if overload applies, or null if it doesn't.
+// Returns { lastIncreasedWeek } if overload was applied, or null if it wasn't.
 export function computeOverload(exercise, lastPerf) {
   const po = exercise?.progressiveOverload
   if (!po || !po.enabled) return null
-
   const currentWeek = getIsoWeek()
   if (po.lastIncreasedWeek === currentWeek) return null
 
-  if (po.type === 'weight') {
-    if (!lastPerf) return null
-    const maxWeight = getMaxWeight(lastPerf.sets)
-    if (maxWeight <= 0) return null
-    const newWeight = Math.round((maxWeight + po.incrementWeight) * 10) / 10
-    return { newWeight, newReps: null, lastIncreasedWeek: currentWeek }
-  }
-
-  if (po.type === 'reps') {
-    const newReps = calcRepTarget(exercise, po)
-    return { newWeight: null, newReps, lastIncreasedWeek: currentWeek }
-  }
-
-  return null
+  // Need at least some data to track the week
+  if (po.type === 'weight' && (!lastPerf || !hasWeight(lastPerf.sets))) return null
+  return { lastIncreasedWeek: currentWeek }
 }
 
-// Always compute the current overload target for display, without week-gating.
-// Returns { weight: string, reps: string } with the values to pre-fill, or null.
+// Always compute the per-set overload targets for display, without week-gating.
+// Returns an array of { weight: string, reps: string } — one per set — or null.
+// Each set's value is derived from the matching set in lastPerf, increased by the increment.
 export function getOverloadTarget(exercise, lastPerf) {
   const po = exercise?.progressiveOverload
   if (!po || !po.enabled) return null
 
+  // How many sets to produce? Use the exercise's set count.
+  const setCount = exercise.sets || 1
+  const result = Array.from({ length: setCount }, (_, i) => ({
+    weight: '',
+    reps: '',
+  }))
+
   if (po.type === 'weight') {
     if (!lastPerf) return null
-    const maxWeight = getMaxWeight(lastPerf.sets)
-    if (maxWeight <= 0) return null
-    const newWeight = Math.round((maxWeight + po.incrementWeight) * 10) / 10
-    return { weight: String(newWeight), reps: '' }
+    for (let i = 0; i < setCount; i++) {
+      const prevSet = lastPerf.sets?.[i]
+      const prevW = prevSet ? parseFloat(prevSet.weight) : NaN
+      if (isNaN(prevW) || prevW <= 0) return null // bail — need real data
+      result[i].weight = roundToOne(prevW + po.incrementWeight)
+    }
+    return result
   }
 
   if (po.type === 'reps') {
-    const newReps = calcRepTarget(exercise, po)
-    return { weight: '', reps: String(newReps) }
+    if (!lastPerf) return null
+    for (let i = 0; i < setCount; i++) {
+      const prevSet = lastPerf.sets?.[i]
+      const prevR = prevSet ? parseInt(prevSet.reps, 10) : NaN
+      if (isNaN(prevR) || prevR <= 0) return null // bail — need real data
+      result[i].reps = String(prevR + po.incrementReps)
+    }
+    return result
   }
 
   return null
 }
 
-function getMaxWeight(sets) {
-  let max = 0
+function roundToOne(v) { return Math.round(v * 10) / 10 }
+
+function hasWeight(sets) {
   for (const s of sets || []) {
     const w = parseFloat(s.weight)
-    if (!isNaN(w) && w > max) max = w
+    if (!isNaN(w) && w > 0) return true
   }
-  return max
-}
-
-function calcRepTarget(exercise, po) {
-  const repStr = exercise.reps || ''
-  const parts = repStr.split('–').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
-  const currentMax = parts.length > 1 ? parts[1] : (parts[0] || 10)
-  return currentMax + po.incrementReps
+  return false
 }
