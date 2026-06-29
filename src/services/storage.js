@@ -1,4 +1,4 @@
-import { DEFAULT_PROGRAM } from '../data/defaultProgram'
+import { DEFAULT_PROGRAM, DEFAULT_OVERLOAD } from '../data/defaultProgram'
 
 export const DEFAULT_TIMER_SETTINGS = {
   autoStart: true,
@@ -37,6 +37,14 @@ export function saveAclMode(v) {
 // Fields we always sync from DEFAULT_PROGRAM for built-in exercises so they stay current.
 const SYNC_FIELDS = ['instructions', 'target', 'secondaryMuscles', 'yImages', 'svgKey']
 
+// Ensure every exercise has a progressiveOverload field (for migration from old data)
+function ensureOverloadField(exercises) {
+  return exercises.map(ex => {
+    if (ex.progressiveOverload) return ex
+    return { ...ex, progressiveOverload: { ...DEFAULT_OVERLOAD } }
+  })
+}
+
 function buildDefaultById() {
   const map = {}
   for (const routine of Object.values(DEFAULT_PROGRAM.routines)) {
@@ -70,16 +78,16 @@ export function loadProgram() {
     if (Array.isArray(saved.upper) || Array.isArray(saved.lower)) {
       const result = JSON.parse(JSON.stringify(DEFAULT_PROGRAM))
       if (Array.isArray(saved.upper))
-        result.routines['upper-a'].exercises = syncExercises(saved.upper, defaultById)
+        result.routines['upper-a'].exercises = ensureOverloadField(syncExercises(saved.upper, defaultById))
       if (Array.isArray(saved.lower))
-        result.routines['lower-a'].exercises = syncExercises(saved.lower, defaultById)
+        result.routines['lower-a'].exercises = ensureOverloadField(syncExercises(saved.lower, defaultById))
       return result
     }
 
     // ── New format: sync built-in exercise fields in all routines ─────────────
     const syncedRoutines = {}
     for (const [id, routine] of Object.entries(saved.routines || {})) {
-      syncedRoutines[id] = { ...routine, exercises: syncExercises(routine.exercises || [], defaultById) }
+      syncedRoutines[id] = { ...routine, exercises: ensureOverloadField(syncExercises(routine.exercises || [], defaultById)) }
     }
 
     return {

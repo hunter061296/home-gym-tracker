@@ -4,6 +4,16 @@
 //   • old: state.completedSets = [bool], state.weight = "12.5kg each"
 // so historical workouts logged before per-set tracking still render.
 
+// Get the ISO week string (e.g. "2026-W26") for a given date.
+export function getIsoWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+}
+
 export function getSetEntries(state) {
   if (!state) return []
   if (Array.isArray(state.sets)) return state.sets
@@ -68,5 +78,39 @@ export function getLastPerformance(history, exerciseId) {
     const hasData = sets.some(s => s.done || s.weight || s.reps) || st.weight
     if (hasData) return { date: session.date, state: st, sets }
   }
+  return null
+}
+
+// Apply progressive overload to an exercise, given its definition and last performance.
+// Returns { newWeight, newReps } if overload applies, or null if it doesn't.
+export function computeOverload(exercise, lastPerf) {
+  const po = exercise?.progressiveOverload
+  if (!po || !po.enabled) return null
+
+  const currentWeek = getIsoWeek()
+  if (po.lastIncreasedWeek === currentWeek) return null
+
+  if (po.type === 'weight') {
+    if (!lastPerf) return null
+    // Find the highest weight used in the last session
+    let maxWeight = 0
+    for (const s of lastPerf.sets) {
+      const w = parseFloat(s.weight)
+      if (!isNaN(w) && w > maxWeight) maxWeight = w
+    }
+    if (maxWeight <= 0) return null
+    const newWeight = Math.round((maxWeight + po.incrementWeight) * 10) / 10
+    return { newWeight, newReps: null, lastIncreasedWeek: currentWeek }
+  }
+
+  if (po.type === 'reps') {
+    // Parse the reps target (e.g. "8–12" → use upper bound + increment)
+    const repStr = exercise.reps || ''
+    const parts = repStr.split('–').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
+    const currentMax = parts.length > 1 ? parts[1] : (parts[0] || 10)
+    const newReps = currentMax + po.incrementReps
+    return { newWeight: null, newReps, lastIncreasedWeek: currentWeek }
+  }
+
   return null
 }

@@ -6,9 +6,19 @@ export const TYPE_CONFIG = {
   rest:  { label: 'Rest',  color: '#888780', bg: 'rgba(136,135,128,0.08)', border: 'rgba(136,135,128,0.2)', text: '#888780' },
 }
 
+export const DEFAULT_OVERLOAD = {
+  enabled: false,
+  type: 'weight',
+  incrementWeight: 2.5,
+  incrementReps: 1,
+  lastIncreasedWeek: null,
+}
+
+// Helper to add default progressive overload field to any exercise
+const applyOverload = (ex) => ({ ...ex, progressiveOverload: { ...DEFAULT_OVERLOAD } })
+
 const UPPER_EXERCISES = [
-  {
-    id: 'u1', name: 'Dumbbell Bench Press', search: 'dumbbell bench press',
+  { id: 'u1', name: 'Dumbbell Bench Press', search: 'dumbbell bench press',
     sets: 4, reps: '8–12', tip: '3-sec lowering when 12 reps feels easy', notes: '',
     svgKey: 'benchPress',
     yImages: ['Dumbbell_Bench_Press/0.jpg', 'Dumbbell_Bench_Press/1.jpg'],
@@ -238,8 +248,8 @@ const LOWER_EXERCISES = [
 
 export const DEFAULT_PROGRAM = {
   routines: {
-    'upper-a': { id: 'upper-a', name: 'Upper A', type: 'upper', exercises: UPPER_EXERCISES },
-    'lower-a': { id: 'lower-a', name: 'Lower A', type: 'lower', exercises: LOWER_EXERCISES },
+    'upper-a': { id: 'upper-a', name: 'Upper A', type: 'upper', exercises: UPPER_EXERCISES.map(applyOverload) },
+    'lower-a': { id: 'lower-a', name: 'Lower A', type: 'lower', exercises: LOWER_EXERCISES.map(applyOverload) },
   },
   schedule: {
     0: 'lower-a',  // Sun

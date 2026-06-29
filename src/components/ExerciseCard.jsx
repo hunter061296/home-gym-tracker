@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { EXERCISE_SVGS } from './ExerciseSVGs'
 import { getGifUrl, getYuhonaImages } from '../data/exerciseImages'
-import { getSetEntries, formatSetsSummary, fmtSetShort } from '../utils/sets'
+import { getSetEntries, formatSetsSummary, fmtSetShort, getIsoWeek } from '../utils/sets'
 
 const ACL_FLAG_WORDS = ['squat', 'lunge', 'jump', 'lateral', 'split']
 
@@ -23,6 +23,13 @@ export default function ExerciseCard({ exercise, state, lastPerformance, plateIn
 
   const target = exercise.target || ''
   const secondary = exercise.secondaryMuscles || []
+
+  // Progressive overload detection
+  const po = exercise.progressiveOverload
+  const isOverloadActive = po?.enabled && po.lastIncreasedWeek === getIsoWeek()
+  const overloadLabel = isOverloadActive
+    ? (po.type === 'weight' ? `+${po.incrementWeight}kg` : `+${po.incrementReps} reps`)
+    : ''
 
   const isAclUnsafe = dayType === 'lower' &&
     ACL_FLAG_WORDS.some(w => exercise.name.toLowerCase().includes(w))
@@ -71,7 +78,10 @@ export default function ExerciseCard({ exercise, state, lastPerformance, plateIn
           <Check size={12} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exercise.name}</p>
+          <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {exercise.name}
+            {isOverloadActive && <span style={{ marginLeft: 6, fontSize: 10, color: '#fbbf24', fontWeight: 700 }}>⚡</span>}
+          </p>
           {formatSetsSummary(state) && <p style={{ color: '#888780', fontSize: 12, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatSetsSummary(state)}</p>}
         </div>
         <span style={{ color: '#22C55E', fontSize: 12, flexShrink: 0 }}>{doneSets}/{totalCount}</span>
@@ -101,6 +111,11 @@ export default function ExerciseCard({ exercise, state, lastPerformance, plateIn
             )}
             {isAclUnsafe && (
               <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(217,119,6,0.25)', color: '#fbbf24', fontWeight: 600 }}>⚠️ Check form</span>
+            )}
+            {isOverloadActive && (
+              <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 20, background: 'rgba(217,119,6,0.25)', color: '#fbbf24', fontWeight: 600 }}>
+                ⚡ {overloadLabel}
+              </span>
             )}
           </div>
           <p style={{ color: '#0F6E56', fontSize: 14, fontWeight: 600, margin: 0 }}>{exercise.sets} sets × {exercise.reps}</p>

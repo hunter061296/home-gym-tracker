@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DAY_NAMES, TYPE_CONFIG } from '../data/defaultProgram'
+import { DAY_NAMES, TYPE_CONFIG, DEFAULT_OVERLOAD } from '../data/defaultProgram'
 import EditExerciseModal from './EditExerciseModal'
 import ExerciseSearchModal from './ExerciseSearchModal'
 import ExerciseModal from './ExerciseModal'
@@ -74,6 +74,7 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast, a
       secondaryMuscles: libEx.secondaryMuscles || [],
       instructions: libEx.instructions || [],
       yImages: libEx.images || [],
+      progressiveOverload: { ...DEFAULT_OVERLOAD },
     }
     updateExercises([...exercises, newEx])
     setShowSearch(false)
@@ -255,7 +256,14 @@ export default function ExerciseEditor({ program, onUpdateProgram, onAddToast, a
               <ArrowBtn disabled={i === exercises.length - 1} onClick={() => move(i, 1)} up={false} />
             </div>
             <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setPreviewTarget(ex)}>
-              <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</p>
+              <p style={{ color: '#F0EEE8', fontSize: 14, fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {ex.name}
+                {ex.progressiveOverload?.enabled && (
+                  <span style={{ marginLeft: 6, fontSize: 11, padding: '1px 6px', borderRadius: 10, background: 'rgba(15,110,86,0.2)', color: '#34d399', fontWeight: 700, verticalAlign: 'middle' }}>
+                    ⚡{ex.progressiveOverload.type === 'weight' ? `+${ex.progressiveOverload.incrementWeight}kg` : `+${ex.progressiveOverload.incrementReps}reps`}
+                  </span>
+                )}
+              </p>
               <p style={{ color: '#888780', fontSize: 12, margin: 0 }}>{ex.sets} sets × {ex.reps}</p>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { loadProgram, saveProgram, loadHistory, saveHistory, resetToDefault, loadAclMode, saveAclMode, loadPlateIncrements, savePlateIncrements } from './services/storage'
-import { getLastPerformance } from './utils/sets'
+import { getLastPerformance, computeOverload } from './utils/sets'
 // SCHEDULE removed — schedule now lives in program.schedule
 import HomeScreen from './components/HomeScreen'
 import WorkoutSession from './components/WorkoutSession'
@@ -68,17 +68,72 @@ export default function App() {
   const startWorkout = (routineId) => {
     const routine = program.routines[routineId]
     if (!routine) return
+
+    // Apply progressive overload to exercises that have it enabled
+    let programChanged = false
+    const updatedProgram = { ...program, routines: { ...program.routines } }
+
+    const exerciseStates = routine.exercises.map(e => {
+      const lastPerf = getLastPerformance(history, e.id)
+      const overload = computeOverload(e, lastPerf)
+      let weightOverride = ''
+      let repsOverride = null
+
+      if (overload) {
+        // Update the exercise's lastIncreasedWeek in the program
+        const updatedEx = {
+          ...e,
+          progressiveOverload: { ...e.progressiveOverload, lastIncreasedWeek: overload.lastIncreasedWeek },
+        }
+        const r = updatedProgram.routines[routineId]
+        const exIdx = r.exercises.findIndex(x => x.id === e.id)
+        if (exIdx !== -1) {
+          const newExercises = [...r.exercises]
+          newExercises[exIdx] = updatedEx
+          updatedProgram.routines[routineId] = { ...r, exercises: newExercises }
+          programChanged = true
+        }
+
+        if (overload.newWeight != null) {
+          weightOverride = String(overload.newWeight)
+        } else if (overload.newReps != null) {
+          repsOverride = overload.newReps
+        }
+      }
+
+      // Build sets — pre-fill with overloaded weight if applicable
+      const sets = Array.from({ length: e.sets }, () => ({
+        weight: weightOverride,
+        reps: '',
+        done: false,
+      }))
+
+      // If overloaded reps: set a string reps target on the first set as a reference
+      // (user still types what they actually do)
+      if (repsOverride) {
+        // We store the suggested reps as a guide – the input placeholder won't show it,
+        // so we mark it on the exercise name via a state flag.
+        // Instead, just set the first set's reps as a hint
+        if (sets.length > 0) {
+          sets[0].reps = String(repsOverride)
+        }
+      }
+
+      return { id: e.id, name: e.name, sets }
+    })
+
+    if (programChanged) {
+      setProgram(updatedProgram)
+      saveProgram(updatedProgram)
+    }
+
     const newSession = {
       routineId,
       routineName: routine.name,
       type: routine.type,
       startTime: Date.now(),
       date: new Date().toLocaleDateString('en-CA'),
-      exerciseStates: routine.exercises.map(e => ({
-        id: e.id,
-        name: e.name,
-        sets: Array.from({ length: e.sets }, () => ({ weight: '', reps: '', done: false })),
-      })),
+      exerciseStates,
     }
     setSession(newSession)
     setView('workout')
@@ -107,6 +162,46 @@ export default function App() {
     const routine = program.routines[routineId]
     if (!routine) return
     const now = Date.now()
+
+    // Apply progressive overload (same logic as startWorkout)
+    let programChanged = false
+    const updatedProgram = { ...program, routines: { ...program.routines } }
+
+    const exerciseStates = routine.exercises.map(e => {
+      const last = getLastPerformance(history, e.id)
+      const overload = computeOverload(e, last)
+
+      if (overload) {
+        const updatedEx = {
+          ...e,
+          progressiveOverload: { ...e.progressiveOverload, lastIncreasedWeek: overload.lastIncreasedWeek },
+        }
+        const r = updatedProgram.routines[routineId]
+        const exIdx = r.exercises.findIndex(x => x.id === e.id)
+        if (exIdx !== -1) {
+          const newExercises = [...r.exercises]
+          newExercises[exIdx] = updatedEx
+          updatedProgram.routines[routineId] = { ...r, exercises: newExercises }
+          programChanged = true
+        }
+      }
+
+      return {
+        id: e.id,
+        name: e.name,
+        sets: Array.from({ length: e.sets }, (_, i) => ({
+          weight: last?.sets?.[i]?.weight ?? '',
+          reps: last?.sets?.[i]?.reps ?? '',
+          done: true,
+        })),
+      }
+    })
+
+    if (programChanged) {
+      setProgram(updatedProgram)
+      saveProgram(updatedProgram)
+    }
+
     const record = {
       id: now,
       routineId,
@@ -117,18 +212,7 @@ export default function App() {
       completedAt: now,
       duration: 60,
       loggedManually: true,
-      exerciseStates: routine.exercises.map(e => {
-        const last = getLastPerformance(history, e.id)
-        return {
-          id: e.id,
-          name: e.name,
-          sets: Array.from({ length: e.sets }, (_, i) => ({
-            weight: last?.sets?.[i]?.weight ?? '',
-            reps: last?.sets?.[i]?.reps ?? '',
-            done: true,
-          })),
-        }
-      }),
+      exerciseStates,
     }
     const next = [record, ...history]
     setHistory(next)
